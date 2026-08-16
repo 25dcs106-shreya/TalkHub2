@@ -3,8 +3,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/setu/AppShell";
 import { useSetu } from "@/lib/setu/store";
-import { USERS } from "@/lib/setu/data";
-import type { Role, SetuUser } from "@/lib/setu/types";
+import { DEMO_USERS } from "@/lib/setu/data";
+import type { DemoUser, RoleId } from "@/lib/setu/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusPill } from "@/components/setu/badges";
 import { Input } from "@/components/ui/input";
@@ -36,11 +36,11 @@ export const Route = createFileRoute("/users")({
   component: UsersPage,
 });
 
-const ROLES: Role[] = ["employee", "hr_officer", "dept_officer", "security_officer", "admin"];
+const ROLES: RoleId[] = ["employee", "hr_officer", "dept_officer", "security_officer", "admin"];
 
 function UsersPage() {
   const { user, logEvent } = useSetu();
-  const [people, setPeople] = useState<SetuUser[]>(USERS);
+  const [people, setPeople] = useState<DemoUser[]>(DEMO_USERS);
   const [q, setQ] = useState("");
 
   if (!user) return null;
@@ -58,7 +58,7 @@ function UsersPage() {
     `${p.name} ${p.employeeId} ${p.department} ${p.role}`.toLowerCase().includes(q.toLowerCase()),
   );
 
-  function update(id: string, patch: Partial<SetuUser>) {
+  function update(id: string, patch: Partial<DemoUser>) {
     setPeople((list) => list.map((p) => (p.employeeId === id ? { ...p, ...patch } : p)));
     logEvent({
       userId: user!.employeeId,
@@ -93,10 +93,10 @@ function UsersPage() {
                   <span className="text-xs font-normal text-muted-foreground">({p.employeeId})</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {p.designation} · {p.department} · {p.location}
+                  {p.roleLabel} · {p.department} · Device: {p.deviceTrust}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <StatusPill>Clearance L{p.clearanceLevel}</StatusPill>
+                  <StatusPill>Clearance L{p.clearance}</StatusPill>
                   <StatusPill tone={p.role === "admin" ? "critical" : p.role === "employee" ? "safe" : "warn"}>
                     {p.role.replace("_", " ")}
                   </StatusPill>
@@ -109,7 +109,7 @@ function UsersPage() {
                 </Label>
                 <Select
                   value={p.role}
-                  onValueChange={(v) => update(p.employeeId, { role: v as Role })}
+                  onValueChange={(v) => update(p.employeeId, { role: v as RoleId })}
                 >
                   <SelectTrigger id={`role-${p.employeeId}`}>
                     <SelectValue />
@@ -129,8 +129,8 @@ function UsersPage() {
                   Clearance level
                 </Label>
                 <Select
-                  value={String(p.clearanceLevel)}
-                  onValueChange={(v) => update(p.employeeId, { clearanceLevel: Number(v) })}
+                  value={String(p.clearance)}
+                  onValueChange={(v) => update(p.employeeId, { clearance: Number(v) as DemoUser["clearance"] })}
                 >
                   <SelectTrigger id={`cl-${p.employeeId}`}>
                     <SelectValue />
