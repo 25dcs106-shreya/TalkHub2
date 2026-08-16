@@ -14,6 +14,7 @@ import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as KnowledgeRouteImport } from './routes/knowledge'
 import { Route as PassportRouteImport } from './routes/passport'
+import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const PassportRoute = PassportRouteImport.update({
   path: '/passport',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewsRoute = ReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
@@ -70,15 +78,28 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/assistant' | '/dashboard' | '/knowledge' | '/passport' | '/settings'
+    | '/'
+    | '/assistant'
+    | '/dashboard'
+    | '/knowledge'
+    | '/passport'
+    | '/reviews'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/assistant' | '/dashboard' | '/knowledge' | '/passport' | '/settings'
+    | '/'
+    | '/assistant'
+    | '/dashboard'
+    | '/knowledge'
+    | '/passport'
+    | '/reviews'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -86,6 +107,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/knowledge'
     | '/passport'
+    | '/reviews'
     | '/settings'
   fileRoutesById: FileRoutesById
 }
@@ -95,6 +117,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   KnowledgeRoute: typeof KnowledgeRoute
   PassportRoute: typeof PassportRoute
+  ReviewsRoute: typeof ReviewsRoute
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -135,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PassportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reviews': {
+      id: '/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof ReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -151,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   KnowledgeRoute: KnowledgeRoute,
   PassportRoute: PassportRoute,
+  ReviewsRoute: ReviewsRoute,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
