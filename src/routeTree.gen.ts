@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as KnowledgeRouteImport } from './routes/knowledge'
 import { Route as PassportRouteImport } from './routes/passport'
 import { Route as ReviewsRouteImport } from './routes/reviews'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const ReviewsRoute = ReviewsRouteImport.update({
   path: '/reviews',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
   '/reviews': typeof ReviewsRoute
+  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
   '/reviews': typeof ReviewsRoute
+  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
   '/reviews': typeof ReviewsRoute
+  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/knowledge'
     | '/passport'
     | '/reviews'
+    | '/security'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/knowledge'
     | '/passport'
     | '/reviews'
+    | '/security'
     | '/settings'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/knowledge'
     | '/passport'
     | '/reviews'
+    | '/security'
     | '/settings'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   KnowledgeRoute: typeof KnowledgeRoute
   PassportRoute: typeof PassportRoute
   ReviewsRoute: typeof ReviewsRoute
+  SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeRoute: KnowledgeRoute,
   PassportRoute: PassportRoute,
   ReviewsRoute: ReviewsRoute,
+  SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
