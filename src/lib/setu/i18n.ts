@@ -1,6 +1,4 @@
-import type { Language } from "./store-language";
-
-export type { Language };
+export type Language = "en" | "hi" | "gu";
 
 /**
  * UI strings for the assistant. Security terminology is kept explicit and
@@ -175,7 +173,7 @@ export const STRINGS = {
 export type Strings = (typeof STRINGS)["en"];
 
 export function t(language: Language): Strings {
-  return (STRINGS[language] ?? STRINGS.en) as Strings;
+  return ((STRINGS as Record<string, Strings>)[language] ?? STRINGS.en) as Strings;
 }
 
 export const LANGUAGE_OPTIONS: { value: Language; label: string; speech: string }[] = [
