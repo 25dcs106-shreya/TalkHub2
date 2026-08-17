@@ -30,6 +30,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { stripCredentials, redactPII } from "@/lib/setu/security";
+import { VoiceInput } from "@/components/setu/VoiceInput";
+import { t as tr, LANGUAGE_OPTIONS, type Language } from "@/lib/setu/i18n";
 import { POLICIES } from "@/lib/setu/data";
 
 export const Route = createFileRoute("/assistant")({
@@ -90,6 +92,11 @@ const DEMOS: { label: string; query: string; note: string }[] = [
     note: "Historical version retrieval",
   },
   {
+    label: "Bonus · Gujarati voice question",
+    query: "રજા માટે અરજી કરવાની પ્રક્રિયા શું છે?",
+    note: "Speak it with the mic — same gateway, Gujarati answer",
+  },
+  {
     label: "Bonus · Hindi query",
     query: "Mujhe maternity leave ke liye kya documents chahiye?",
     note: "Multilingual, same authoritative source",
@@ -126,8 +133,9 @@ function AssistantPage() {
 
   if (!user || !passport) return null;
 
+  const strings = tr(language as Language);
   const sensitiveSoFar = messages.filter(
-    (m) => m.result && m.result.risk.level !== "LOW",
+    (m) => m.result && m.result.securityStatus !== "passed",
   ).length;
 
   async function ask(question: string) {
@@ -159,6 +167,7 @@ function AssistantPage() {
           passport: passport!,
           recentSensitiveCount: sensitiveSoFar,
           confidenceThreshold,
+          language: language as Language,
         },
       })) as GatewayResult;
 
@@ -171,22 +180,22 @@ function AssistantPage() {
       });
       recordResult(q, result);
 
-      if (result.risk.level === "HIGH" || result.risk.level === "CRITICAL") {
+      if (result.escalated) {
         raiseSessionRisk(
-          result.risk.level,
+          result.risk?.level ?? "HIGH",
           "Unusual query pattern detected — routed to security review",
         );
         toast.warning("Session risk updated", {
           description: "A security alert was raised for authorised security personnel.",
         });
       }
-      if (result.credentials.length) toast.error("Credential blocked before reaching the AI system");
-      else if (result.redactions.length) toast.info("Sensitive information detected and protected");
+      if (result.credentials.length) toast.error(strings.toastCredential);
+      else if (result.redactions.length) toast.info(strings.toastRedacted);
     } catch {
       replaceMessage(pendingId, {
         id: pendingId,
         role: "assistant",
-        text: "The security gateway could not complete this request. Please retry; if the problem persists, contact your department IT desk.",
+        text: strings.gatewayError,
         timestamp: new Date().toISOString(),
       });
       toast.error("Gateway error");
@@ -203,7 +212,7 @@ function AssistantPage() {
       employeeName: user!.name,
       department: user!.department,
       question: safe,
-      riskLevel: m.result?.risk.level ?? "LOW",
+      riskLevel: m.result?.risk?.level ?? "LOW",
       aiAnswer: m.text,
       sources: (m.result?.citations ?? []).map((c) => `${c.circular} §${c.section}`),
     });
@@ -275,7 +284,7 @@ function AssistantPage() {
               className="flex items-end gap-2"
             >
               <label htmlFor="q" className="sr-only">
-                Your question
+                {strings.yourQuestion}
               </label>
               <Textarea
                 id="q"
@@ -288,16 +297,23 @@ function AssistantPage() {
                     void ask(input);
                   }
                 }}
-                placeholder="Ask about leave, LTC, transfers, attendance, welfare schemes…"
+                placeholder={strings.placeholder}
                 className="min-h-[52px] resize-none"
+              />
+              <VoiceInput
+                language={language as Language}
+                disabled={busy}
+                onTranscript={(text) =>
+                  setInput((prev) => (prev ? `${prev.trim()} ${text}` : text))
+                }
               />
               <Button type="submit" disabled={busy || !input.trim()} className="h-[52px]">
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                <span className="ml-2 hidden sm:inline">Send</span>
+                <span className="ml-2 hidden sm:inline">{strings.send}</span>
               </Button>
             </form>
             <p className="mt-2 text-xs text-muted-foreground">
-              Never enter passwords, OTPs or access tokens. The gateway blocks and discards them.
+              {strings.inputWarning} {strings.micHint}
             </p>
           </div>
         </Card>
@@ -416,7 +432,17 @@ function AnswerCard({
         <p className="mt-2 whitespace-pre-line text-sm leading-relaxed">{message.text}</p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <RiskBadge level={r.risk.level} score={r.risk.score} />
+          {r.riskVisible && r.risk ? (
+            <RiskBadge level={r.risk.level} score={r.risk.score} />
+          ) : (
+            <StatusPill tone={r.securityStatus === "blocked" ? "critical" : r.securityStatus === "protected" ? "warn" : "safe"}>
+              {r.securityStatus === "blocked"
+                ? "Request blocked"
+                : r.securityStatus === "protected"
+                  ? "Request protected"
+                  : "Request secure"}
+            </StatusPill>
+          )}
           {r.outcome === "answered" && <ConfidenceBadge value={r.confidence} />}
           <StatusPill tone={denied || blocked ? "critical" : "safe"}>
             Access {denied || blocked ? "denied" : "authorised"}
@@ -531,16 +557,18 @@ function AnswerCard({
             </li>
           ))}
         </ul>
-        <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Risk reasons
-          </p>
-          <ul className="mt-1 text-xs text-muted-foreground">
-            {r.risk.reasons.map((reason) => (
-              <li key={reason}>• {reason}</li>
-            ))}
-          </ul>
-        </div>
+        {r.riskVisible && r.risk && (
+          <div className="mt-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Risk reasons (security personnel only)
+            </p>
+            <ul className="mt-1 text-xs text-muted-foreground">
+              {r.risk.reasons.map((reason) => (
+                <li key={reason}>• {reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </details>
     </div>
   );
