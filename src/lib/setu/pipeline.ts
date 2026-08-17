@@ -9,6 +9,7 @@ import {
   scoreRisk,
   stripCredentials,
 } from "./security";
+import { t, type Language } from "./i18n";
 import type { DemoUser, GatewayResult, GatewayTrace, Passport, RiskLevel } from "./types";
 
 export function buildPassport(user: DemoUser, sessionRisk: RiskLevel = "LOW"): Passport {
@@ -31,6 +32,7 @@ export interface PipelineInput {
   passport: Passport;
   recentSensitiveCount: number;
   confidenceThreshold: number;
+  language?: Language;
 }
 
 function id(prefix: string) {
@@ -44,6 +46,8 @@ function id(prefix: string) {
  */
 export function runGateway(input: PipelineInput): GatewayResult {
   const { query, passport } = input;
+  const lang: Language = input.language ?? "en";
+  const s = t(lang);
   const trace: GatewayTrace[] = [];
   const timestamp = new Date().toISOString();
 
@@ -120,6 +124,8 @@ export function runGateway(input: PipelineInput): GatewayResult {
     timestamp,
     outputFiltered: false,
     conflict: null,
+    riskVisible: true,
+    escalated: risk.level === "HIGH" || risk.level === "CRITICAL",
   };
 
   // Blocking outcome: credentials -----------------------------------------
@@ -128,8 +134,11 @@ export function runGateway(input: PipelineInput): GatewayResult {
     return {
       ...base,
       outcome: "blocked",
+      securityStatus: "blocked",
       answer:
-        "Sensitive credential material was detected in your message and has been blocked from reaching the AI system. The value was not stored or logged. Please reset the exposed credential if it is a live secret and contact your department security officer.",
+        lang !== "en"
+          ? s.credentialBlocked
+          : "Sensitive credential material was detected in your message and has been blocked from reaching the AI system. The value was not stored or logged. Please reset the exposed credential if it is a live secret and contact your department security officer.",
       citations: [],
       confidence: 0,
       humanApprovalRequired: true,
@@ -143,7 +152,9 @@ export function runGateway(input: PipelineInput): GatewayResult {
     return {
       ...base,
       outcome: "denied",
+      securityStatus: "blocked",
       answer:
+        (lang !== "en" ? s.blockedGeneric : null) ??
         refusal ??
         "This request attempts to override SetuAI's security instructions. Instructions embedded in user input or documents are treated as untrusted content and are never followed.",
       citations: [],
@@ -163,7 +174,8 @@ export function runGateway(input: PipelineInput): GatewayResult {
     return {
       ...base,
       outcome: "denied",
-      answer: `ACCESS DENIED. Your Security Passport (${passport.user.roleLabel}, clearance L${passport.user.clearance}) does not authorise the knowledge required to answer this question. Matching restricted material: ${titles}. If you have a legitimate official need, request human review and an authorised officer will handle it.`,
+      securityStatus: "blocked",
+      answer: lang !== "en" ? s.blockedGeneric : `ACCESS DENIED. Your Security Passport (${passport.user.roleLabel}, clearance L${passport.user.clearance}) does not authorise the knowledge required to answer this question. Matching restricted material: ${titles}. If you have a legitimate official need, request human review and an authorised officer will handle it.`,
       citations: [],
       confidence: 0,
       humanApprovalRequired: true,
@@ -219,7 +231,9 @@ export function runGateway(input: PipelineInput): GatewayResult {
   return {
     ...base,
     outcome,
-    answer: guarded.text,
+    securityStatus:
+      guarded.filtered || redactions.length ? "protected" : "passed",
+    answer: outcome === "no_source" && lang !== "en" ? s.noSource : guarded.text,
     citations: allowed.map(toCitation),
     confidence,
     humanApprovalRequired,

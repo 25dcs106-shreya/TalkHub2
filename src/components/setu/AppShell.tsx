@@ -1,3 +1,4 @@
+import { canViewRiskDetails } from "@/lib/setu/authz";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -161,7 +162,11 @@ export function AppShell({
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden md:inline">
-              <StatusPill tone={riskTone(sessionRisk)}>Session {sessionRisk}</StatusPill>
+              {canViewRiskDetails(user.role) ? (
+                <StatusPill tone={riskTone(sessionRisk)}>Session {sessionRisk}</StatusPill>
+              ) : (
+                <StatusPill tone="safe">Session protected</StatusPill>
+              )}
             </span>
 
             <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
