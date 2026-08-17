@@ -1,7 +1,7 @@
 import { Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSpeechRecognition, type SpeechErrorKind } from "@/hooks/useSpeechRecognition";
 import { speechLocale, t, type Language } from "@/lib/setu/i18n";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,8 @@ export function VoiceInput({
   const label = listening ? s.micStop : s.micStart;
 
   return (
-    <Tooltip>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
       <TooltipTrigger asChild>
         <Button
           type="button"
@@ -76,6 +77,7 @@ export function VoiceInput({
       <TooltipContent>
         <p>{label}</p>
       </TooltipContent>
-    </Tooltip>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
