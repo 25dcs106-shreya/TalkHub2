@@ -4,8 +4,7 @@ export type Language = "en" | "hi" | "gu";
  * UI strings for the assistant. Security terminology is kept explicit and
  * unambiguous in every language — meaning is never softened by translation.
  */
-export const STRINGS = {
-  en: {
+const EN = {
     localeTag: "en-IN",
     languageLabel: "Language",
     conversation: "Secure conversation",
@@ -59,8 +58,11 @@ export const STRINGS = {
       "The security gateway could not complete this request. Please retry; if the problem persists, contact your department IT desk.",
     monitoringNote: "Security monitoring is used to protect government information.",
     trace: "Gateway controls applied",
-  },
-  hi: {
+};
+
+export type Strings = typeof EN;
+
+const HI: Strings = {
     localeTag: "hi-IN",
     languageLabel: "भाषा",
     conversation: "सुरक्षित संवाद",
@@ -113,8 +115,9 @@ export const STRINGS = {
       "सुरक्षा गेटवे यह अनुरोध पूरा नहीं कर सका। पुनः प्रयास करें; समस्या बनी रहे तो विभागीय आईटी डेस्क से संपर्क करें।",
     monitoringNote: "सरकारी सूचना की सुरक्षा हेतु सुरक्षा निगरानी लागू है।",
     trace: "लागू गेटवे नियंत्रण",
-  },
-  gu: {
+};
+
+const GU: Strings = {
     localeTag: "gu-IN",
     languageLabel: "ભાષા",
     conversation: "સુરક્ષિત વાતચીત",
@@ -166,14 +169,13 @@ export const STRINGS = {
     gatewayError:
       "સુરક્ષા ગેટવે આ વિનંતી પૂર્ણ કરી શક્યું નથી. ફરી પ્રયાસ કરો; સમસ્યા રહે તો વિભાગીય આઈટી ડેસ્કનો સંપર્ક કરો.",
     monitoringNote: "સરકારી માહિતીની સુરક્ષા માટે સુરક્ષા મોનિટરિંગ લાગુ છે.",
-    trace: "લાગુ ગેટવે નિયંત્રણો",
-  },
-} as const;
+  trace: "લાગુ ગેટવે નિયંત્રણો",
+};
 
-export type Strings = (typeof STRINGS)["en"];
+export const STRINGS: Record<Language, Strings> = { en: EN, hi: HI, gu: GU };
 
 export function t(language: Language): Strings {
-  return ((STRINGS as Record<string, Strings>)[language] ?? STRINGS.en) as Strings;
+  return STRINGS[language] ?? STRINGS.en;
 }
 
 export const LANGUAGE_OPTIONS: { value: Language; label: string; speech: string }[] = [
