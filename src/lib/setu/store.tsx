@@ -227,9 +227,17 @@ export function SetuProvider({ children }: { children: ReactNode }) {
           userId: user.employeeId,
           department: user.department,
           action,
-          riskLevel: result.risk.level,
+          // Employees never receive risk internals; derive a coarse level for
+          // the local metadata log without exposing scores or factors.
+          riskLevel:
+            result.risk?.level ??
+            (result.securityStatus === "blocked"
+              ? "HIGH"
+              : result.securityStatus === "protected"
+                ? "MEDIUM"
+                : "LOW"),
           result: res,
-          reason: result.risk.reasons[0] ?? "Query processed by gateway",
+          reason: result.risk?.reasons[0] ?? "Query processed by gateway",
         });
       },
     };
