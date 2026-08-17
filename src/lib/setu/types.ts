@@ -90,7 +90,14 @@ export interface GatewayResult {
   redactions: Finding[];
   credentials: Finding[];
   injection: boolean;
-  risk: { score: number; level: RiskLevel; reasons: string[] };
+  /** INTERNAL SECURITY DATA — present only for Security Officer / Administrator. */
+  risk?: { score: number; level: RiskLevel; reasons: string[] };
+  /** True only when the caller is authorised to see the risk block above. */
+  riskVisible: boolean;
+  /** Employee-safe security status. Never exposes score, level or factors. */
+  securityStatus: "passed" | "protected" | "blocked";
+  /** Whether the gateway raised the session for security review (no detail). */
+  escalated: boolean;
   citations: Citation[];
   confidence: number;
   humanApprovalRequired: boolean;
@@ -99,6 +106,7 @@ export interface GatewayResult {
   trace: GatewayTrace[];
   timestamp: string;
 }
+
 
 export interface ChatMessage {
   id: string;
