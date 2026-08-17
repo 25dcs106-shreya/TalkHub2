@@ -189,8 +189,8 @@ function AssistantPage() {
           description: "A security alert was raised for authorised security personnel.",
         });
       }
-      if (result.credentials.length) toast.error(strings.toastCredential);
-      else if (result.redactions.length) toast.info(strings.toastRedacted);
+      if (result.credentials.length) toast.error(strings.credentialBlocked);
+      else if (result.redactions.length) toast.info(strings.piiProtected);
     } catch {
       replaceMessage(pendingId, {
         id: pendingId,
@@ -244,7 +244,7 @@ function AssistantPage() {
           <CardContent className="flex-1 space-y-4 overflow-y-auto py-4" aria-live="polite">
             {messages.length === 0 && (
               <div className="rounded-lg border border-dashed p-6 text-center">
-                <p className="font-medium">No questions yet</p>
+                <p className="font-medium">{strings.emptyTitle}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Try “What documents are required for transfer?” or use a demo scenario on the
                   right. Language selected: {language.toUpperCase()}.
