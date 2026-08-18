@@ -9,7 +9,7 @@ import {
   scoreRisk,
   stripCredentials,
 } from "./security";
-import { t, type Language } from "./i18n";
+import { translate, type Language } from "./i18n";
 import type { DemoUser, GatewayResult, GatewayTrace, Passport, RiskLevel } from "./types";
 
 export function buildPassport(user: DemoUser, sessionRisk: RiskLevel = "LOW"): Passport {
@@ -47,7 +47,6 @@ function id(prefix: string) {
 export function runGateway(input: PipelineInput): GatewayResult {
   const { query, passport } = input;
   const lang: Language = input.language ?? "en";
-  const s = t(lang);
   const trace: GatewayTrace[] = [];
   const timestamp = new Date().toISOString();
 
@@ -137,7 +136,7 @@ export function runGateway(input: PipelineInput): GatewayResult {
       securityStatus: "blocked",
       answer:
         lang !== "en"
-          ? s.credentialBlocked
+          ? translate(lang, "chat.credentialBlocked")
           : "Sensitive credential material was detected in your message and has been blocked from reaching the AI system. The value was not stored or logged. Please reset the exposed credential if it is a live secret and contact your department security officer.",
       citations: [],
       confidence: 0,
@@ -154,9 +153,9 @@ export function runGateway(input: PipelineInput): GatewayResult {
       outcome: "denied",
       securityStatus: "blocked",
       answer:
-        (lang !== "en" ? s.blockedGeneric : null) ??
+        (lang !== "en" ? translate(lang, "chat.blockedGeneric") : null) ??
         refusal ??
-        "This request attempts to override SetuAI's security instructions. Instructions embedded in user input or documents are treated as untrusted content and are never followed.",
+        "This request attempts to override TalkHub's security instructions. Instructions embedded in user input or documents are treated as untrusted content and are never followed.",
       citations: [],
       confidence: 0,
       humanApprovalRequired: risk.level === "CRITICAL" || risk.level === "HIGH",
@@ -175,7 +174,7 @@ export function runGateway(input: PipelineInput): GatewayResult {
       ...base,
       outcome: "denied",
       securityStatus: "blocked",
-      answer: lang !== "en" ? s.blockedGeneric : `ACCESS DENIED. Your Security Passport (${passport.user.roleLabel}, clearance L${passport.user.clearance}) does not authorise the knowledge required to answer this question. Matching restricted material: ${titles}. If you have a legitimate official need, request human review and an authorised officer will handle it.`,
+      answer: lang !== "en" ? translate(lang, "chat.blockedGeneric") : `ACCESS DENIED. Your Security Passport (${passport.user.roleLabel}, clearance L${passport.user.clearance}) does not authorise the knowledge required to answer this question. Matching restricted material: ${titles}. If you have a legitimate official need, request human review and an authorised officer will handle it.`,
       citations: [],
       confidence: 0,
       humanApprovalRequired: true,
@@ -233,7 +232,7 @@ export function runGateway(input: PipelineInput): GatewayResult {
     outcome,
     securityStatus:
       guarded.filtered || redactions.length ? "protected" : "passed",
-    answer: outcome === "no_source" && lang !== "en" ? s.noSource : guarded.text,
+    answer: outcome === "no_source" && lang !== "en" ? translate(lang, "chat.noSource") : guarded.text,
     citations: allowed.map(toCitation),
     confidence,
     humanApprovalRequired,
