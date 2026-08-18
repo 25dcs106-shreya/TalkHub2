@@ -6,6 +6,7 @@ import { useSetu } from "@/lib/setu/store";
 import { POLICIES } from "@/lib/setu/data";
 import { canAccessDoc } from "@/lib/setu/security";
 import { versionAt } from "@/lib/setu/rag";
+import { CATEGORY_KEYS, CLASSIFICATION_KEYS, DEPARTMENT_KEYS } from "@/lib/setu/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,13 +30,13 @@ import {
 export const Route = createFileRoute("/knowledge")({
   head: () => ({
     meta: [
-      { title: "Knowledge Base — SetuAI 2.0" },
+      { title: "Knowledge Base — TalkHub" },
       {
         name: "description",
         content:
           "Browse the authorised government policy knowledge base with classification, versions, effective dates and circular references.",
       },
-      { property: "og:title", content: "Knowledge Base — SetuAI 2.0" },
+      { property: "og:title", content: "Knowledge Base — TalkHub" },
       {
         property: "og:description",
         content: "Authorised, versioned government policy documents with full citations.",
@@ -61,7 +62,7 @@ const CATEGORIES = [
 ];
 
 function KnowledgePage() {
-  const { passport } = useSetu();
+  const { passport, t, locale } = useSetu();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -82,28 +83,42 @@ function KnowledgePage() {
   if (!passport) return null;
   const doc = POLICIES.find((p) => p.id === openId);
   const shown = doc ? versionAt(doc, asOf || null) : null;
+  const docClassKey = doc ? CLASSIFICATION_KEYS[doc.classification] : undefined;
+
+  const catLabel = (c: string) => {
+    const key = CATEGORY_KEYS[c];
+    return key ? t(key) : c;
+  };
+  const deptLabel = (d: string) => {
+    const key = DEPARTMENT_KEYS[d];
+    return key ? t(key) : d;
+  };
+  const classLabel = (c: string) => {
+    const key = CLASSIFICATION_KEYS[c];
+    return key ? t(key) : c;
+  };
 
   return (
-    <AppShell
-      title="Knowledge Base"
-      description="Only documents your Security Passport authorises are retrievable. Restricted items are visible as locked metadata only."
-    >
+    <AppShell title={t("kb.title")} description={t("kb.description")}>
       <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
         <div className="space-y-1.5">
-          <Label htmlFor="search">Search policies</Label>
+          <Label htmlFor="search">{t("kb.searchLabel")}</Label>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
             <Input
               id="search"
               className="pl-9"
-              placeholder="Leave, LTC, transfer, circular number…"
+              placeholder={t("kb.searchPlaceholder")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="cat">Category</Label>
+          <Label htmlFor="cat">{t("kb.categoryLabel")}</Label>
           <Select value={cat} onValueChange={setCat}>
             <SelectTrigger id="cat">
               <SelectValue />
@@ -111,7 +126,7 @@ function KnowledgePage() {
             <SelectContent>
               {CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {c}
+                  {catLabel(c)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -121,7 +136,7 @@ function KnowledgePage() {
 
       {list.length === 0 && (
         <p className="mt-8 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No policy documents match this search.
+          {t("kb.noResults")}
         </p>
       )}
 
@@ -142,15 +157,17 @@ function KnowledgePage() {
                     {p.title}
                   </p>
                   <StatusPill tone={allowed ? "safe" : "critical"}>
-                    {allowed ? "Authorised" : "Restricted"}
+                    {allowed ? t("kb.authorised") : t("kb.restricted")}
                   </StatusPill>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {p.id} · {p.department} · {p.category} · {p.classification}
+                  {p.id} · {deptLabel(p.department)} · {catLabel(p.category)} ·{" "}
+                  {classLabel(p.classification)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {p.circular} §{p.section} · v{current.version} · effective{" "}
-                  {new Date(current.effectiveFrom).toLocaleDateString("en-IN")}
+                  {p.circular} §{p.section} · {t("kb.version", { v: current.version })} ·{" "}
+                  {t("common.effective")}{" "}
+                  {new Date(current.effectiveFrom).toLocaleDateString(locale)}
                 </p>
                 <p className="line-clamp-2 text-sm text-muted-foreground">{current.summary}</p>
                 <Button
@@ -159,7 +176,7 @@ function KnowledgePage() {
                   disabled={!allowed}
                   onClick={() => setOpenId(p.id)}
                 >
-                  {allowed ? "Open document" : "Access denied by RBAC"}
+                  {allowed ? t("kb.openDocument") : t("kb.accessDenied")}
                 </Button>
               </CardContent>
             </Card>
@@ -172,29 +189,32 @@ function KnowledgePage() {
           <DialogHeader>
             <DialogTitle>{doc?.title}</DialogTitle>
             <DialogDescription>
-              {doc?.circular} · Section {doc?.section} · {doc?.classification} · access level{" "}
-              L{doc?.minClearance}
+              {doc?.circular} · {t("kb.section")} {doc?.section} ·{" "}
+              {docClassKey ? t(docClassKey) : doc?.classification} ·{" "}
+              {t("kb.accessLevel", { n: doc?.minClearance ?? 1 })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-1.5">
-            <Label htmlFor="asof">Policy time machine — view as of</Label>
+            <Label htmlFor="asof">{t("kb.timeMachine")}</Label>
             <Input id="asof" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
           </div>
 
           {shown && (
             <div className="rounded-md border p-3">
               <div className="flex items-center justify-between">
-                <p className="font-medium">Version {shown.version}</p>
+                <p className="font-medium">{t("kb.version", { v: shown.version })}</p>
                 <StatusPill tone={shown.status === "Current" ? "safe" : "neutral"}>
-                  {shown.status}
+                  {shown.status === "Current"
+                    ? t("pol.vstatus.current")
+                    : t("pol.vstatus.superseded")}
                 </StatusPill>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Effective {new Date(shown.effectiveFrom).toLocaleDateString("en-IN")} —{" "}
+                {t("common.effective")} {new Date(shown.effectiveFrom).toLocaleDateString(locale)} —{" "}
                 {shown.effectiveTo
-                  ? new Date(shown.effectiveTo).toLocaleDateString("en-IN")
-                  : "present"}
+                  ? new Date(shown.effectiveTo).toLocaleDateString(locale)
+                  : t("common.present")}
               </p>
               <p className="mt-2 text-sm">{shown.content}</p>
             </div>

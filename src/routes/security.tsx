@@ -19,17 +19,18 @@ import { useSetu } from "@/lib/setu/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPill, riskTone } from "@/components/setu/badges";
 import { POLICIES } from "@/lib/setu/data";
+import { DEPARTMENT_KEYS, RISK_KEYS, type StringKey } from "@/lib/setu/i18n";
 
 export const Route = createFileRoute("/security")({
   head: () => ({
     meta: [
-      { title: "Security Dashboard — SetuAI 2.0" },
+      { title: "Security Dashboard — TalkHub" },
       {
         name: "description",
         content:
           "Privacy-preserving security monitoring: query risk distribution, blocked requests, department usage and policy conflicts for authorised officers.",
       },
-      { property: "og:title", content: "Security Dashboard — SetuAI 2.0" },
+      { property: "og:title", content: "Security Dashboard — TalkHub" },
       {
         property: "og:description",
         content: "Risk analytics and security alerts for authorised security personnel.",
@@ -47,7 +48,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 function SecurityPage() {
-  const { user, events, tickets } = useSetu();
+  const { user, events, tickets, t, locale } = useSetu();
 
   const data = useMemo(() => {
     const byRisk = ["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((level) => ({
@@ -62,20 +63,19 @@ function SecurityPage() {
       const day = new Date(Date.now() - (6 - i) * 86400000);
       const key = day.toISOString().slice(0, 10);
       return {
-        day: day.toLocaleDateString("en-IN", { weekday: "short" }),
+        day: day.toLocaleDateString(locale, { weekday: "short" }),
         events: events.filter((e) => e.timestamp.slice(0, 10) === key).length,
       };
     });
     return { byRisk, byDept, byDay };
-  }, [events]);
+  }, [events, locale]);
 
   if (!user) return null;
   if (!["security_officer", "admin"].includes(user.role)) {
     return (
-      <AppShell title="Security Dashboard">
+      <AppShell title={t("sec.title")}>
         <p className="rounded-lg border border-critical/40 bg-critical-soft p-6 text-sm text-critical">
-          ACCESS DENIED. This dashboard is restricted to Security Officers and System
-          Administrators.
+          {t("sec.accessDenied")}
         </p>
       </AppShell>
     );
@@ -85,27 +85,31 @@ function SecurityPage() {
   const sensitive = events.filter((e) => e.riskLevel !== "LOW").length;
   const conflicts = POLICIES.filter((p) => p.conflict).length;
 
-  const cards = [
-    { label: "Active users", value: 247 },
-    { label: "Safe queries", value: 1842 + events.filter((e) => e.riskLevel === "LOW").length },
-    { label: "Sensitive queries", value: sensitive },
-    { label: "Blocked requests", value: blocked },
-    { label: "Human reviews", value: tickets.length },
-    { label: "Policy conflicts", value: conflicts },
-    { label: "Security alerts", value: events.filter((e) => e.riskLevel === "CRITICAL").length },
+  const cards: { labelKey: StringKey; value: number }[] = [
+    { labelKey: "sec.activeUsers", value: 247 },
+    { labelKey: "sec.safeQueries", value: 1842 + events.filter((e) => e.riskLevel === "LOW").length },
+    { labelKey: "sec.sensitiveQueries", value: sensitive },
+    { labelKey: "sec.blockedRequests", value: blocked },
+    { labelKey: "sec.humanReviews", value: tickets.length },
+    { labelKey: "sec.policyConflicts", value: conflicts },
+    { labelKey: "sec.securityAlerts", value: events.filter((e) => e.riskLevel === "CRITICAL").length },
   ];
 
+  const deptLabel = (d: string) => {
+    const key = DEPARTMENT_KEYS[d];
+    return key ? t(key) : d;
+  };
+
   return (
-    <AppShell
-      title="Security Dashboard"
-      description="Privacy-preserving security monitoring focused on protecting government information. No employee is accused automatically."
-    >
+    <AppShell title={t("sec.title")} description={t("sec.description")}>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
-          <Card key={c.label}>
+          <Card key={c.labelKey}>
             <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">{c.label}</p>
-              <p className="mt-2 text-2xl font-bold">{c.value.toLocaleString("en-IN")}</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t(c.labelKey)}
+              </p>
+              <p className="mt-2 text-2xl font-bold">{c.value.toLocaleString(locale)}</p>
             </CardContent>
           </Card>
         ))}
@@ -114,15 +118,22 @@ function SecurityPage() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Queries by risk level</CardTitle>
+            <CardTitle className="text-base">{t("sec.chartRisk")}</CardTitle>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.byRisk}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="level" fontSize={12} />
+                <XAxis
+                  dataKey="level"
+                  fontSize={12}
+                  tickFormatter={(v: string) => t(RISK_KEYS[v] ?? "risk.low")}
+                />
                 <YAxis allowDecimals={false} fontSize={12} />
-                <Tooltip />
+                <Tooltip
+                  formatter={(value) => [value, t("sec.chartRisk")]}
+                  labelFormatter={(v: string) => t(RISK_KEYS[v] ?? "risk.low")}
+                />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {data.byRisk.map((d) => (
                     <Cell key={d.level} fill={RISK_COLORS[d.level]} />
@@ -135,7 +146,7 @@ function SecurityPage() {
 
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Security events over time</CardTitle>
+            <CardTitle className="text-base">{t("sec.chartEvents")}</CardTitle>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -152,17 +163,23 @@ function SecurityPage() {
 
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Department usage</CardTitle>
+            <CardTitle className="text-base">{t("sec.chartDept")}</CardTitle>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={data.byDept} dataKey="queries" nameKey="department" outerRadius={90} label>
+                <Pie
+                  data={data.byDept}
+                  dataKey="queries"
+                  nameKey="department"
+                  outerRadius={90}
+                  label={(props) => deptLabel(String((props as { name?: string }).name ?? ""))}
+                >
                   {data.byDept.map((_, i) => (
                     <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value, name) => [value, deptLabel(String(name))]} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -170,15 +187,18 @@ function SecurityPage() {
 
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Latest security alerts</CardTitle>
+            <CardTitle className="text-base">{t("sec.latestAlerts")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {events.slice(0, 6).map((e) => (
-              <div key={e.id} className="flex items-start justify-between gap-3 rounded-md border p-3 text-sm">
+              <div
+                key={e.id}
+                className="flex items-start justify-between gap-3 rounded-md border p-3 text-sm"
+              >
                 <div>
                   <p className="font-medium">{e.action}</p>
                   <p className="text-xs text-muted-foreground">
-                    {e.userId} · {e.department} · {e.reason}
+                    {e.userId} · {deptLabel(e.department)} · {e.reason}
                   </p>
                 </div>
                 <StatusPill tone={riskTone(e.riskLevel)}>{e.result}</StatusPill>

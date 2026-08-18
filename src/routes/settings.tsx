@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AppShell } from "@/components/setu/AppShell";
-import { useSetu, type Language } from "@/lib/setu/store";
+import { useSetu } from "@/lib/setu/store";
+import { LANGUAGE_OPTIONS, type Language } from "@/lib/setu/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -17,13 +18,13 @@ import {
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — SetuAI 2.0" },
+      { title: "Settings — TalkHub" },
       {
         name: "description",
         content:
-          "Configure SetuAI language, confidence threshold for human verification and review session security preferences.",
+          "Configure TalkHub language, confidence threshold for human verification and review session security preferences.",
       },
-      { property: "og:title", content: "Settings — SetuAI 2.0" },
+      { property: "og:title", content: "Settings — TalkHub" },
       {
         property: "og:description",
         content: "Language, confidence threshold and session security preferences.",
@@ -34,42 +35,42 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const { language, setLanguage, confidenceThreshold, setThreshold, clearChat, user } = useSetu();
+  const { language, setLanguage, confidenceThreshold, setThreshold, clearChat, user, t } =
+    useSetu();
   if (!user) return null;
 
   return (
-    <AppShell title="Settings" description="Preferences apply to this demo session only.">
+    <AppShell title={t("set.title")} description={t("set.description")}>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Language</CardTitle>
+            <CardTitle className="text-base">{t("set.languageTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Label htmlFor="lang">Interface and assistant language</Label>
+            <Label htmlFor="lang">{t("set.languageLabel")}</Label>
             <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
               <SelectTrigger id="lang" className="w-full sm:w-64">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-                <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                {LANGUAGE_OPTIONS.map((l) => (
+                  <SelectItem key={l.value} value={l.value}>
+                    {l.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground">
-              Questions may be asked in any supported language. The authoritative policy source
-              remains the same regardless of language.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("set.languageNote")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Confidence threshold</CardTitle>
+            <CardTitle className="text-base">{t("set.thresholdTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Label htmlFor="threshold">
-              Require human verification below {confidenceThreshold}%
+              {t("set.thresholdLabel", { n: confidenceThreshold })}
             </Label>
             <Slider
               id="threshold"
@@ -79,29 +80,27 @@ function SettingsPage() {
               value={[confidenceThreshold]}
               onValueChange={([v]) => setThreshold(v ?? 70)}
             />
-            <p className="text-sm text-muted-foreground">
-              Answers below this confidence are flagged and offered for human review.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("set.thresholdNote")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Privacy</CardTitle>
+            <CardTitle className="text-base">{t("set.privacyTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>• Passwords, OTPs, API keys and private keys are never stored or logged.</p>
-            <p>• Security logs contain metadata and reasons, never secret values.</p>
-            <p>• Data minimisation: only the redacted query and authorised context reach the model.</p>
+            <p>• {t("set.privacy1")}</p>
+            <p>• {t("set.privacy2")}</p>
+            <p>• {t("set.privacy3")}</p>
             <Button
               variant="outline"
               className="mt-2"
               onClick={() => {
                 clearChat();
-                toast.success("Conversation cleared from this device");
+                toast.success(t("set.clearedToast"));
               }}
             >
-              Clear conversation history
+              {t("set.clearButton")}
             </Button>
           </CardContent>
         </Card>

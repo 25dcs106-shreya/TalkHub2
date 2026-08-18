@@ -5,6 +5,7 @@ import { AppShell } from "@/components/setu/AppShell";
 import { useSetu } from "@/lib/setu/store";
 import { DEMO_USERS } from "@/lib/setu/data";
 import type { DemoUser, RoleId } from "@/lib/setu/types";
+import { DEPARTMENT_KEYS, ROLE_KEYS } from "@/lib/setu/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusPill } from "@/components/setu/badges";
 import { Input } from "@/components/ui/input";
@@ -20,13 +21,13 @@ import {
 export const Route = createFileRoute("/users")({
   head: () => ({
     meta: [
-      { title: "User & Access Management — SetuAI 2.0" },
+      { title: "User & Access Management — TalkHub" },
       {
         name: "description",
         content:
           "Administrator console for roles, clearance levels and department scope that drive every RBAC decision in the AI gateway.",
       },
-      { property: "og:title", content: "User & Access Management — SetuAI 2.0" },
+      { property: "og:title", content: "User & Access Management — TalkHub" },
       {
         property: "og:description",
         content: "Manage roles and clearance levels behind the zero-trust gateway.",
@@ -39,16 +40,16 @@ export const Route = createFileRoute("/users")({
 const ROLES: RoleId[] = ["employee", "hr_officer", "dept_officer", "security_officer", "admin"];
 
 function UsersPage() {
-  const { user, logEvent } = useSetu();
+  const { user, logEvent, t } = useSetu();
   const [people, setPeople] = useState<DemoUser[]>(DEMO_USERS);
   const [q, setQ] = useState("");
 
   if (!user) return null;
   if (user.role !== "admin") {
     return (
-      <AppShell title="User Management">
+      <AppShell title={t("users.title")}>
         <p className="rounded-lg border border-critical/40 bg-critical-soft p-6 text-sm text-critical">
-          ACCESS DENIED. User and access management is restricted to System Administrators.
+          {t("users.accessDenied")}
         </p>
       </AppShell>
     );
@@ -57,6 +58,11 @@ function UsersPage() {
   const shown = people.filter((p) =>
     `${p.name} ${p.employeeId} ${p.department} ${p.role}`.toLowerCase().includes(q.toLowerCase()),
   );
+
+  const deptLabel = (d: string) => {
+    const key = DEPARTMENT_KEYS[d];
+    return key ? t(key) : d;
+  };
 
   function update(id: string, patch: Partial<DemoUser>) {
     setPeople((list) => list.map((p) => (p.employeeId === id ? { ...p, ...patch } : p)));
@@ -70,17 +76,19 @@ function UsersPage() {
         .map(([k, v]) => `${k}=${String(v)}`)
         .join(", ")}`,
     });
-    toast.success(`Access updated for ${id}`);
+    toast.success(t("users.updated", { id }));
   }
 
   return (
-    <AppShell
-      title="User & Access Management"
-      description="Roles and clearance levels defined here are enforced on every query before any knowledge is retrieved."
-    >
+    <AppShell title={t("users.title")} description={t("users.description")}>
       <div className="max-w-sm space-y-1.5">
-        <Label htmlFor="usearch">Search staff</Label>
-        <Input id="usearch" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, ID, department…" />
+        <Label htmlFor="usearch">{t("users.searchLabel")}</Label>
+        <Input
+          id="usearch"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("users.searchPlaceholder")}
+        />
       </div>
 
       <div className="mt-4 space-y-3">
@@ -90,22 +98,29 @@ function UsersPage() {
               <div>
                 <p className="font-medium">
                   {p.name}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">({p.employeeId})</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    ({p.employeeId})
+                  </span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {p.roleLabel} · {p.department} · Device: {p.deviceTrust}
+                  {t(ROLE_KEYS[p.role])} · {deptLabel(p.department)} ·{" "}
+                  {t("users.device", { v: p.deviceTrust })}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <StatusPill>Clearance L{p.clearance}</StatusPill>
-                  <StatusPill tone={p.role === "admin" ? "critical" : p.role === "employee" ? "safe" : "warn"}>
-                    {p.role.replace("_", " ")}
+                  <StatusPill>{t("users.clearance", { n: p.clearance })}</StatusPill>
+                  <StatusPill
+                    tone={
+                      p.role === "admin" ? "critical" : p.role === "employee" ? "safe" : "warn"
+                    }
+                  >
+                    {t(ROLE_KEYS[p.role])}
                   </StatusPill>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor={`role-${p.employeeId}`} className="text-xs">
-                  Role
+                  {t("users.roleLabel")}
                 </Label>
                 <Select
                   value={p.role}
@@ -117,7 +132,7 @@ function UsersPage() {
                   <SelectContent>
                     {ROLES.map((r) => (
                       <SelectItem key={r} value={r}>
-                        {r.replace("_", " ")}
+                        {t(ROLE_KEYS[r])}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -126,11 +141,13 @@ function UsersPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor={`cl-${p.employeeId}`} className="text-xs">
-                  Clearance level
+                  {t("users.clearanceLabel")}
                 </Label>
                 <Select
                   value={String(p.clearance)}
-                  onValueChange={(v) => update(p.employeeId, { clearance: Number(v) as DemoUser["clearance"] })}
+                  onValueChange={(v) =>
+                    update(p.employeeId, { clearance: Number(v) as DemoUser["clearance"] })
+                  }
                 >
                   <SelectTrigger id={`cl-${p.employeeId}`}>
                     <SelectValue />
@@ -138,7 +155,7 @@ function UsersPage() {
                   <SelectContent>
                     {[1, 2, 3, 4, 5].map((l) => (
                       <SelectItem key={l} value={String(l)}>
-                        Level {l}
+                        {t("users.level", { n: l })}
                       </SelectItem>
                     ))}
                   </SelectContent>

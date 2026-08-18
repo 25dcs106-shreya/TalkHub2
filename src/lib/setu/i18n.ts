@@ -59,6 +59,18 @@ export const LANGUAGE_NAME: Record<Language, string> = {
   gu: "Gujarati",
 };
 
+/**
+ * Detects the language of a free-text query from its Unicode script.
+ * Gujarati and Devanagari are unambiguous; anything else returns null so the
+ * caller can fall back to the UI locale. Romanised Hindi ("Hinglish") has no
+ * script signal and intentionally falls through to the locale.
+ */
+export function detectQueryLanguage(text: string): Language | null {
+  if (/[\u0A80-\u0AFF]/.test(text)) return "gu";
+  if (/[\u0900-\u097F]/.test(text)) return "hi";
+  return null;
+}
+
 // ---- Domain-value → translation-key mappings --------------------------------
 // Data values (departments, categories, …) stay in English internally; these
 // maps render them in the selected language without touching stored data.

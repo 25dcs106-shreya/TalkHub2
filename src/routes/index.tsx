@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, Lock, ScanEye, FileCheck2, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useSetu } from "@/lib/setu/store";
-import { DEMO_USERS, DEPARTMENTS, ROLE_LABELS } from "@/lib/setu/data";
+import { DEMO_USERS, DEPARTMENTS } from "@/lib/setu/data";
+import {
+  DEPARTMENT_KEYS,
+  LANGUAGE_OPTIONS,
+  ROLE_KEYS,
+  type Language,
+} from "@/lib/setu/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +26,13 @@ import { Card, CardContent } from "@/components/ui/card";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sign in — SetuAI 2.0 Zero-Trust AI Gateway" },
+      { title: "Sign in — TalkHub Zero-Trust AI Gateway" },
       {
         name: "description",
         content:
-          "Secure demo sign-in for SetuAI 2.0, the zero-trust AI gateway that protects government knowledge with RBAC, PII scanning and human oversight.",
+          "Secure demo sign-in for TalkHub, the zero-trust AI gateway that protects government knowledge with RBAC, PII scanning and human oversight.",
       },
-      { property: "og:title", content: "Sign in — SetuAI 2.0 Zero-Trust AI Gateway" },
+      { property: "og:title", content: "Sign in — TalkHub Zero-Trust AI Gateway" },
       {
         property: "og:description",
         content:
@@ -38,7 +44,7 @@ export const Route = createFileRoute("/")({
 });
 
 function LoginPage() {
-  const { login, user, hydrated } = useSetu();
+  const { login, user, hydrated, language, setLanguage, t } = useSetu();
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +62,7 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     if (mfa && otp.trim().length !== 6) {
-      setError("Enter the 6-digit demo MFA code (any six digits).");
+      setError(t("login.errorMfa"));
       return;
     }
     setLoading(true);
@@ -64,10 +70,15 @@ function LoginPage() {
       const res = login(identifier, password, department);
       setLoading(false);
       if (!res.ok) {
-        setError(res.error ?? "Sign-in failed.");
+        const deptKey = res.errorDept ? DEPARTMENT_KEYS[res.errorDept] : undefined;
+        setError(
+          res.errorKey
+            ? t(res.errorKey, { dept: deptKey ? t(deptKey) : (res.errorDept ?? "") })
+            : t("login.errorFailed"),
+        );
         return;
       }
-      toast.success("Security Passport issued");
+      toast.success(t("login.passportIssued"));
       navigate({ to: "/dashboard" });
     }, 500);
   }
@@ -81,6 +92,13 @@ function LoginPage() {
     setError(null);
   }
 
+  const heroPoints = [
+    { icon: UserCheck, key: "login.heroPoint1" as const },
+    { icon: ScanEye, key: "login.heroPoint2" as const },
+    { icon: FileCheck2, key: "login.heroPoint3" as const },
+    { icon: Lock, key: "login.heroPoint4" as const },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <div className="h-1 w-full gov-stripe" aria-hidden />
@@ -91,67 +109,65 @@ function LoginPage() {
               <ShieldCheck className="size-6" aria-hidden />
             </span>
             <div>
-              <p className="text-lg font-bold tracking-tight">SetuAI 2.0</p>
-              <p className="text-xs text-white/70">Government of India — Prototype</p>
+              <p className="text-lg font-bold tracking-tight">{t("app.name")}</p>
+              <p className="text-xs text-white/70">{t("app.govLine")}</p>
             </div>
           </div>
 
           <div className="max-w-lg">
-            <h2 className="text-3xl font-bold leading-tight">
-              We are not building another chatbot. We are building a Zero-Trust AI Gateway for
-              Government Knowledge.
-            </h2>
-            <p className="mt-4 text-sm text-white/75">
-              Every question is verified, scanned, risk-scored and authorised before any model sees
-              it. Every answer carries its source. High-risk decisions escalate to authorised human
-              officers.
-            </p>
+            <h2 className="text-3xl font-bold leading-tight">{t("login.heroTitle")}</h2>
+            <p className="mt-4 text-sm text-white/75">{t("login.heroBody")}</p>
             <ul className="mt-8 space-y-3 text-sm">
-              {[
-                { icon: UserCheck, text: "Verify who is asking and what they may know" },
-                { icon: ScanEye, text: "Strip credentials and PII before the model call" },
-                { icon: FileCheck2, text: "Answer only from authorised, cited policy sources" },
-                { icon: Lock, text: "Guard the output and log an auditable trail" },
-              ].map((f) => (
-                <li key={f.text} className="flex items-center gap-3">
+              {heroPoints.map((f) => (
+                <li key={f.key} className="flex items-center gap-3">
                   <f.icon className="size-4 text-gov-saffron" aria-hidden />
-                  {f.text}
+                  {t(f.key)}
                 </li>
               ))}
             </ul>
           </div>
 
-          <p className="text-xs text-white/60">
-            DEMO / FICTIONAL DATA. No real government credentials or records are used.
-          </p>
+          <p className="text-xs text-white/60">{t("login.demoNotice")}</p>
         </section>
 
         <section className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
-            <div className="mb-6 lg:hidden">
-              <div className="flex items-center gap-2.5">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 lg:hidden">
                 <span className="flex size-10 items-center justify-center rounded-md bg-gov-navy text-gov-navy-foreground">
                   <ShieldCheck className="size-5" aria-hidden />
                 </span>
                 <div>
-                  <p className="text-lg font-bold">SetuAI 2.0</p>
-                  <p className="text-xs text-muted-foreground">Zero-Trust AI Gateway</p>
+                  <p className="text-lg font-bold">{t("app.name")}</p>
+                  <p className="text-xs text-muted-foreground">{t("app.tagline")}</p>
                 </div>
+              </div>
+              <div className="ml-auto">
+                <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
+                  <SelectTrigger className="w-[130px]" aria-label={t("header.language")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGE_OPTIONS.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-gov-saffron/50 bg-gov-saffron/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-gov-saffron">
-              Demo Environment
+              {t("app.demoBadge")}
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight">Employee sign-in</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Ask anything you're authorised to know — safely.
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight">{t("login.title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("login.subtitle")}</p>
 
             <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
               <div className="space-y-1.5">
-                <Label htmlFor="identifier">Employee ID or demo account</Label>
+                <Label htmlFor="identifier">{t("login.identifier")}</Label>
                 <Input
                   id="identifier"
                   value={identifier}
@@ -163,7 +179,7 @@ function LoginPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -176,17 +192,20 @@ function LoginPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="department">Department</Label>
+                <Label htmlFor="department">{t("login.department")}</Label>
                 <Select value={department} onValueChange={setDepartment}>
                   <SelectTrigger id="department">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("login.selectDepartment")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
+                    {DEPARTMENTS.map((d) => {
+                      const key = DEPARTMENT_KEYS[d];
+                      return (
+                        <SelectItem key={d} value={d}>
+                          {key ? t(key) : d}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -194,16 +213,16 @@ function LoginPage() {
               <div className="flex items-center justify-between rounded-md border bg-card p-3">
                 <div>
                   <Label htmlFor="mfa" className="text-sm">
-                    Multi-factor authentication
+                    {t("login.mfa")}
                   </Label>
-                  <p className="text-xs text-muted-foreground">Simulated OTP for the demo</p>
+                  <p className="text-xs text-muted-foreground">{t("login.mfaHint")}</p>
                 </div>
                 <Switch id="mfa" checked={mfa} onCheckedChange={setMfa} />
               </div>
 
               {mfa && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="otp">6-digit MFA code</Label>
+                  <Label htmlFor="otp">{t("login.otp")}</Label>
                   <Input
                     id="otp"
                     inputMode="numeric"
@@ -216,38 +235,45 @@ function LoginPage() {
               )}
 
               {error && (
-                <p role="alert" className="rounded-md border border-critical/40 bg-critical-soft px-3 py-2 text-sm text-critical">
+                <p
+                  role="alert"
+                  className="rounded-md border border-critical/40 bg-critical-soft px-3 py-2 text-sm text-critical"
+                >
                   {error}
                 </p>
               )}
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verifying identity…" : "Sign in securely"}
+                {loading ? t("login.verifying") : t("login.signIn")}
               </Button>
             </form>
 
             <Card className="mt-6">
               <CardContent className="p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Demo accounts (password: demo1234)
+                  {t("login.demoAccounts")}
                 </p>
                 <div className="mt-3 grid gap-2">
-                  {DEMO_USERS.map((u) => (
-                    <button
-                      key={u.username}
-                      type="button"
-                      onClick={() => quickLogin(u.username)}
-                      className="flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm hover:bg-accent"
-                    >
-                      <span>
-                        <span className="font-medium">{u.username}</span>
-                        <span className="block text-xs text-muted-foreground">
-                          {ROLE_LABELS[u.role]} · {u.department}
+                  {DEMO_USERS.map((u) => {
+                    const roleKey = ROLE_KEYS[u.role];
+                    const deptKey = DEPARTMENT_KEYS[u.department];
+                    return (
+                      <button
+                        key={u.username}
+                        type="button"
+                        onClick={() => quickLogin(u.username)}
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm hover:bg-accent"
+                      >
+                        <span>
+                          <span className="font-medium">{u.username}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {t(roleKey)} · {deptKey ? t(deptKey) : u.department}
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">L{u.clearance}</span>
-                    </button>
-                  ))}
+                        <span className="text-xs text-muted-foreground">L{u.clearance}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

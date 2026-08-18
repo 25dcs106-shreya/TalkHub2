@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StatusPill, riskTone } from "@/components/setu/badges";
 import type { ReviewTicket } from "@/lib/setu/types";
+import { DEPARTMENT_KEYS, RISK_KEYS, TICKET_STATUS_KEYS } from "@/lib/setu/i18n";
 import {
   Select,
   SelectContent,
@@ -20,13 +21,13 @@ import {
 export const Route = createFileRoute("/reviews")({
   head: () => ({
     meta: [
-      { title: "Human Review Tickets — SetuAI 2.0" },
+      { title: "Human Review Tickets — TalkHub" },
       {
         name: "description",
         content:
-          "Track escalated questions. SetuAI informs; authorised human officers take the final decision on high-risk or low-confidence cases.",
+          "Track escalated questions. TalkHub informs; authorised human officers take the final decision on high-risk or low-confidence cases.",
       },
-      { property: "og:title", content: "Human Review Tickets — SetuAI 2.0" },
+      { property: "og:title", content: "Human Review Tickets — TalkHub" },
       {
         property: "og:description",
         content: "Escalation workflow where authorised officers make the final decision.",
@@ -45,37 +46,43 @@ const STATUSES: ReviewTicket["status"][] = [
 ];
 
 function ReviewsPage() {
-  const { user, tickets, updateTicket, createTicket } = useSetu();
+  const { user, tickets, updateTicket, createTicket, t, locale } = useSetu();
   const [note, setNote] = useState<Record<string, string>>({});
   const [newQuestion, setNewQuestion] = useState("");
   if (!user) return null;
 
   const isOfficer = ["hr_officer", "dept_officer", "security_officer", "admin"].includes(user.role);
-  const visible = isOfficer ? tickets : tickets.filter((t) => t.employeeId === user.employeeId);
+  const visible = isOfficer ? tickets : tickets.filter((tk) => tk.employeeId === user.employeeId);
+
+  const statusLabel = (s: string) => t(TICKET_STATUS_KEYS[s] ?? "status.pending");
+  const deptLabel = (d: string) => {
+    const key = DEPARTMENT_KEYS[d];
+    return key ? t(key) : d;
+  };
 
   return (
     <AppShell
-      title={isOfficer ? "Human Review Queue" : "My Review Requests"}
-      description="AI provides information. An authorised human officer makes the final decision."
+      title={isOfficer ? t("rev.titleQueue") : t("rev.titleMine")}
+      description={t("rev.description")}
     >
       {!isOfficer && (
         <Card className="mb-4">
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Raise a new review request</CardTitle>
+            <CardTitle className="text-base">{t("rev.newTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Label htmlFor="newq">Your question for an authorised officer</Label>
+            <Label htmlFor="newq">{t("rev.newLabel")}</Label>
             <Textarea
               id="newq"
               rows={3}
               value={newQuestion}
               onChange={(e) => setNewQuestion(e.target.value)}
-              placeholder="Describe what you need clarified. Do not include passwords or personal identifiers."
+              placeholder={t("rev.newPlaceholder")}
             />
             <Button
               disabled={!newQuestion.trim()}
               onClick={() => {
-                const t = createTicket({
+                const ticket = createTicket({
                   employeeId: user.employeeId,
                   employeeName: user.name,
                   department: user.department,
@@ -85,10 +92,10 @@ function ReviewsPage() {
                   sources: [],
                 });
                 setNewQuestion("");
-                toast.success(`Ticket ${t.id} created`);
+                toast.success(t("rev.toastCreated", { id: ticket.id }));
               }}
             >
-              Submit request
+              {t("rev.submit")}
             </Button>
           </CardContent>
         </Card>
@@ -96,89 +103,103 @@ function ReviewsPage() {
 
       {visible.length === 0 && (
         <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No review tickets yet. Escalate an answer from the assistant to create one.
+          {t("rev.empty")}
         </p>
       )}
 
       <div className="space-y-3">
-        {visible.map((t) => (
-          <Card key={t.id}>
+        {visible.map((tk) => (
+          <Card key={tk.id}>
             <CardContent className="space-y-3 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="font-semibold">{t.id}</p>
+                  <p className="font-semibold">{tk.id}</p>
                   <p className="text-xs text-muted-foreground">
-                    {t.employeeName} ({t.employeeId}) · {t.department} ·{" "}
-                    {new Date(t.createdAt).toLocaleString("en-IN")}
+                    {tk.employeeName} ({tk.employeeId}) · {deptLabel(tk.department)} ·{" "}
+                    {new Date(tk.createdAt).toLocaleString(locale)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <StatusPill tone={riskTone(t.riskLevel)}>Risk {t.riskLevel}</StatusPill>
-                  <StatusPill tone={t.status === "Resolved" ? "safe" : t.status === "Rejected" ? "critical" : "warn"}>
-                    {t.status}
+                  {isOfficer && (
+                    <StatusPill tone={riskTone(tk.riskLevel)}>
+                      {t("rev.risk", { level: t(RISK_KEYS[tk.riskLevel] ?? "risk.low") })}
+                    </StatusPill>
+                  )}
+                  <StatusPill
+                    tone={
+                      tk.status === "Resolved"
+                        ? "safe"
+                        : tk.status === "Rejected"
+                          ? "critical"
+                          : "warn"
+                    }
+                  >
+                    {statusLabel(tk.status)}
                   </StatusPill>
                 </div>
               </div>
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Question
+                  {t("rev.question")}
                 </p>
-                <p className="text-sm">{t.question}</p>
+                <p className="text-sm">{tk.question}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  AI answer
+                  {t("rev.aiAnswer")}
                 </p>
-                <p className="text-sm text-muted-foreground">{t.aiAnswer}</p>
+                <p className="text-sm text-muted-foreground">{tk.aiAnswer}</p>
               </div>
-              {t.sources.length > 0 && (
-                <p className="text-xs text-muted-foreground">Sources: {t.sources.join(", ")}</p>
+              {tk.sources.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("rev.sources", { list: tk.sources.join(", ") })}
+                </p>
               )}
-              {t.officerNote && (
+              {tk.officerNote && (
                 <p className="rounded-md border border-safe/30 bg-safe-soft px-3 py-2 text-sm">
-                  Officer decision: {t.officerNote}
+                  {t("rev.officerDecision", { note: tk.officerNote })}
                 </p>
               )}
 
               {isOfficer && (
                 <div className="grid gap-2 border-t pt-3 sm:grid-cols-[200px_1fr_auto]">
                   <Select
-                    value={t.status}
+                    value={tk.status}
                     onValueChange={(v) => {
-                      updateTicket(t.id, { status: v as ReviewTicket["status"] });
-                      toast.success(`${t.id} set to ${v}`);
+                      updateTicket(tk.id, { status: v as ReviewTicket["status"] });
+                      toast.success(t("rev.toastStatus", { id: tk.id, status: statusLabel(v) }));
                     }}
                   >
-                    <SelectTrigger aria-label={`Status for ${t.id}`}>
+                    <SelectTrigger aria-label={t("rev.statusAria", { id: tk.id })}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {STATUSES.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {s}
+                          {statusLabel(s)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Textarea
                     rows={1}
-                    placeholder="Officer decision / note"
-                    aria-label={`Officer note for ${t.id}`}
-                    value={note[t.id] ?? ""}
-                    onChange={(e) => setNote((n) => ({ ...n, [t.id]: e.target.value }))}
+                    placeholder={t("rev.notePlaceholder")}
+                    aria-label={t("rev.noteAria", { id: tk.id })}
+                    value={note[tk.id] ?? ""}
+                    onChange={(e) => setNote((n) => ({ ...n, [tk.id]: e.target.value }))}
                   />
                   <Button
                     variant="outline"
                     onClick={() => {
-                      updateTicket(t.id, {
-                        officerNote: note[t.id] ?? "",
+                      updateTicket(tk.id, {
+                        officerNote: note[tk.id] ?? "",
                         status: "Resolved",
                       });
-                      toast.success(`${t.id} resolved`);
+                      toast.success(t("rev.toastResolved", { id: tk.id }));
                     }}
                   >
-                    Record decision
+                    {t("rev.record")}
                   </Button>
                 </div>
               )}

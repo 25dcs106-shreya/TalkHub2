@@ -75,6 +75,9 @@
   "common.risk": "RISK",
   "common.device": "Device",
   "common.level": "Level {n}",
+  "common.circular": "Circular",
+  "common.effective": "Effective",
+  "common.lastUpdated": "Last updated",
 
   "login.title": "Employee sign-in",
   "login.subtitle": "Ask anything you're authorised to know — safely.",
