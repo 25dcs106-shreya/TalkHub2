@@ -53,6 +53,16 @@ function LoginPage() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  /**
+   * Inputs stay disabled until React has hydrated. Typing into the
+   * server-rendered form before hydration is wiped when controlled inputs
+   * attach, which made the form look like it was "not taking input".
+   */
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (hydrated && user) navigate({ to: "/dashboard", replace: true });
