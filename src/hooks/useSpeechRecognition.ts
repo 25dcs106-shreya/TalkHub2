@@ -117,7 +117,12 @@ export function useSpeechRecognition(options: {
     rec.interimResults = true;
     rec.maxAlternatives = 1;
 
-    rec.onstart = () => setActive(true);
+    let started = false;
+    rec.onstart = () => {
+      started = true;
+      clearStartTimer();
+      setActive(true);
+    };
     rec.onresult = (event) => {
       let interim = "";
       for (let i = event.resultIndex ?? 0; i < event.results.length; i += 1) {
