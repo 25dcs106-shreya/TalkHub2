@@ -141,6 +141,7 @@ export function useSpeechRecognition(options: {
       cbRef.current.onInterim?.(interim);
     };
     rec.onerror = (event) => {
+      clearStartTimer();
       const code = String(event?.error ?? "unknown");
       const kind: SpeechErrorKind =
         code === "not-allowed" || code === "service-not-allowed"
@@ -157,6 +158,7 @@ export function useSpeechRecognition(options: {
       if (kind !== "aborted") cbRef.current.onError?.(kind);
     };
     rec.onend = () => {
+      clearStartTimer();
       setActive(false);
       cbRef.current.onInterim?.("");
     };
@@ -166,8 +168,27 @@ export function useSpeechRecognition(options: {
     } catch {
       setActive(false);
       cbRef.current.onError?.("unknown");
+      return;
     }
-  }, [lang, setActive]);
+
+    // Watchdog: some environments (headless browsers, embedded previews
+    // without microphone permission) accept start() but then fire neither
+    // onstart nor onerror — the recognition silently hangs and the mic
+    // button looks dead. If the service hasn't started within 3s, abort and
+    // surface a clear error so the user knows to type instead.
+    clearStartTimer();
+    startTimerRef.current = setTimeout(() => {
+      if (started) return;
+      try {
+        rec.abort();
+      } catch {
+        /* ignore */
+      }
+      setActive(false);
+      cbRef.current.onInterim?.("");
+      cbRef.current.onError?.("unavailable");
+    }, 3000);
+  }, [lang, setActive, clearStartTimer]);
 
   // Language changes mid-session: restart cleanly with the new locale.
   useEffect(() => {
