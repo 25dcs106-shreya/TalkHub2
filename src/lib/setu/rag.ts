@@ -161,10 +161,16 @@ export function retrieve(
   const allowed: Retrieved[] = [];
   const deniedByRbac: PolicyDoc[] = [];
 
+  // A denial only counts as "requested but restricted" when the restricted
+  // document genuinely matches the query intent — not an incidental substring
+  // hit far below the best match (which would inflate the risk engine).
+  const topScore = top[0]?.score ?? 0;
+  const denialThreshold = Math.max(6, topScore * 0.5);
+
   for (const { doc, score } of top) {
     if (canAccessDoc(doc, passport)) {
       allowed.push({ doc, version: versionAt(doc, when), score });
-    } else {
+    } else if (score >= denialThreshold) {
       deniedByRbac.push(doc);
     }
   }
