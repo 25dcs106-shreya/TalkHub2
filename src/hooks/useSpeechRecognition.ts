@@ -62,8 +62,16 @@ export function useSpeechRecognition(options: {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cbRef = useRef({ onFinal, onInterim, onError, onListeningChange });
   cbRef.current = { onFinal, onInterim, onError, onListeningChange };
+
+  const clearStartTimer = useCallback(() => {
+    if (startTimerRef.current) {
+      clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setSupported(Boolean(getRecognitionCtor()));
