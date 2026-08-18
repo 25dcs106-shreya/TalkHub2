@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as KnowledgeRouteImport } from './routes/knowledge'
 import { Route as PassportRouteImport } from './routes/passport'
 import { Route as PoliciesRouteImport } from './routes/policies'
@@ -39,6 +40,11 @@ const AuditRoute = AuditRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KnowledgeRoute = KnowledgeRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/assistant': typeof AssistantRoute
   '/audit': typeof AuditRoute
   '/dashboard': typeof DashboardRoute
+  '/help': typeof HelpRoute
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
   '/policies': typeof PoliciesRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/assistant': typeof AssistantRoute
   '/audit': typeof AuditRoute
   '/dashboard': typeof DashboardRoute
+  '/help': typeof HelpRoute
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
   '/policies': typeof PoliciesRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/assistant': typeof AssistantRoute
   '/audit': typeof AuditRoute
   '/dashboard': typeof DashboardRoute
+  '/help': typeof HelpRoute
   '/knowledge': typeof KnowledgeRoute
   '/passport': typeof PassportRoute
   '/policies': typeof PoliciesRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/audit'
     | '/dashboard'
+    | '/help'
     | '/knowledge'
     | '/passport'
     | '/policies'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/audit'
     | '/dashboard'
+    | '/help'
     | '/knowledge'
     | '/passport'
     | '/policies'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/audit'
     | '/dashboard'
+    | '/help'
     | '/knowledge'
     | '/passport'
     | '/policies'
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   AssistantRoute: typeof AssistantRoute
   AuditRoute: typeof AuditRoute
   DashboardRoute: typeof DashboardRoute
+  HelpRoute: typeof HelpRoute
   KnowledgeRoute: typeof KnowledgeRoute
   PassportRoute: typeof PassportRoute
   PoliciesRoute: typeof PoliciesRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/knowledge': {
@@ -260,6 +280,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssistantRoute: AssistantRoute,
   AuditRoute: AuditRoute,
   DashboardRoute: DashboardRoute,
+  HelpRoute: HelpRoute,
   KnowledgeRoute: KnowledgeRoute,
   PassportRoute: PassportRoute,
   PoliciesRoute: PoliciesRoute,
