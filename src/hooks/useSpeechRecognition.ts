@@ -53,9 +53,9 @@ function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
 export function useSpeechRecognition(options: {
   lang: string;
   onFinal: (text: string) => void;
-  onInterim?: (text: string) => void;
-  onError?: (kind: SpeechErrorKind) => void;
-  onListeningChange?: (listening: boolean) => void;
+  onInterim?: ((text: string) => void) | undefined;
+  onError?: ((kind: SpeechErrorKind) => void) | undefined;
+  onListeningChange?: ((listening: boolean) => void) | undefined;
 }) {
   const { lang, onFinal, onInterim, onError, onListeningChange } = options;
   const [listening, setListening] = useState(false);
