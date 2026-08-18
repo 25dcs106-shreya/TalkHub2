@@ -153,7 +153,11 @@ function LoginPage() {
                 </div>
               </div>
               <div className="ml-auto">
-                <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
+                <Select
+                  value={language}
+                  onValueChange={(v) => setLanguage(v as Language)}
+                  disabled={!mounted}
+                >
                   <SelectTrigger className="w-[130px]" aria-label={t("header.language")}>
                     <SelectValue />
                   </SelectTrigger>
@@ -184,6 +188,7 @@ function LoginPage() {
                   autoComplete="username"
                   placeholder="employee.demo"
                   onChange={(e) => setIdentifier(e.target.value)}
+                  disabled={!mounted}
                   required
                 />
               </div>
@@ -197,13 +202,14 @@ function LoginPage() {
                   autoComplete="current-password"
                   placeholder="demo1234"
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={!mounted}
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="department">{t("login.department")}</Label>
-                <Select value={department} onValueChange={setDepartment}>
+                <Select value={department} onValueChange={setDepartment} disabled={!mounted}>
                   <SelectTrigger id="department">
                     <SelectValue placeholder={t("login.selectDepartment")} />
                   </SelectTrigger>
@@ -227,7 +233,7 @@ function LoginPage() {
                   </Label>
                   <p className="text-xs text-muted-foreground">{t("login.mfaHint")}</p>
                 </div>
-                <Switch id="mfa" checked={mfa} onCheckedChange={setMfa} />
+                <Switch id="mfa" checked={mfa} onCheckedChange={setMfa} disabled={!mounted} />
               </div>
 
               {mfa && (
@@ -240,6 +246,7 @@ function LoginPage() {
                     value={otp}
                     placeholder="123456"
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    disabled={!mounted}
                   />
                 </div>
               )}
@@ -253,7 +260,7 @@ function LoginPage() {
                 </p>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || !mounted}>
                 {loading ? t("login.verifying") : t("login.signIn")}
               </Button>
             </form>
@@ -272,7 +279,8 @@ function LoginPage() {
                         key={u.username}
                         type="button"
                         onClick={() => quickLogin(u.username)}
-                        className="flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm hover:bg-accent"
+                        disabled={!mounted}
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <span>
                           <span className="font-medium">{u.username}</span>
