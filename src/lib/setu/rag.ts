@@ -161,13 +161,16 @@ export function retrieve(
   const allowed: Retrieved[] = [];
   const deniedByRbac: PolicyDoc[] = [];
 
-  // A denial only counts as "requested but restricted" when the restricted
-  // document genuinely matches the query intent — not an incidental substring
-  // hit far below the best match (which would inflate the risk engine).
+  // Weak incidental matches (a single body-substring hit) are neither answers
+  // nor "requested but restricted" — they are noise. A denial only counts when
+  // the restricted document genuinely matches the query intent, otherwise the
+  // risk engine would be inflated by an unrelated restricted title.
   const topScore = top[0]?.score ?? 0;
+  const allowFloor = Math.max(4, topScore * 0.2);
   const denialThreshold = Math.max(6, topScore * 0.5);
 
   for (const { doc, score } of top) {
+    if (score < allowFloor) continue;
     if (canAccessDoc(doc, passport)) {
       allowed.push({ doc, version: versionAt(doc, when), score });
     } else if (score >= denialThreshold) {
