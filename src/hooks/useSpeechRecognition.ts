@@ -197,13 +197,14 @@ export function useSpeechRecognition(options: {
 
   useEffect(
     () => () => {
+      clearStartTimer();
       try {
         recRef.current?.abort();
       } catch {
         /* ignore */
       }
     },
-    [],
+    [clearStartTimer],
   );
 
   return { listening, supported, start, stop, toggle: () => (listening ? stop() : start()) };
