@@ -137,6 +137,7 @@ function AssistantPage() {
     confidenceThreshold,
     language,
     t,
+    locale,
   } = useSetu();
   const runGateway = useServerFn(processQuery);
   const [input, setInput] = useState("");
