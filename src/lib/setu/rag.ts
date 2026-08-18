@@ -6,7 +6,77 @@ const STOPWORDS = new Set([
   "what","is","the","for","a","an","of","to","how","can","i","do","are","my","me","in","on","and",
   "please","tell","give","show","need","required","documents","about","apply","procedure","kya",
   "hai","ke","liye","mujhe","chahiye","માટે","કયા","શું",
+  // Hindi / Gujarati function words — carry no retrieval signal
+  "है","हैं","में","का","की","को","से","पर","और","या","तो","ही","भी","मुझे","कैसे",
+  "છે","અને","કે","ને","નો","ની","ના","એ","આ","પર","થી","કરવાની","કરવા","જોઈએ","કેવી","કેવું",
 ]);
+
+/**
+ * Multilingual query expansion — maps Hindi (Devanagari) and Gujarati terms
+ * onto the English topic vocabulary of the policy corpus, so a question asked
+ * in any supported language retrieves the same authoritative sources.
+ */
+const INDIC_SYNONYMS: Record<string, string[]> = {
+  // Gujarati
+  "રજા": ["leave", "raja"],
+  "અરજી": ["apply", "application"],
+  "પ્રક્રિયા": ["procedure", "process"],
+  "નિયમ": ["rule", "policy"],
+  "નિયમો": ["rules", "policy"],
+  "પગાર": ["salary", "payroll", "pagar"],
+  "પેન્શન": ["pension"],
+  "પ્રવાસ": ["travel"],
+  "યાત્રા": ["travel", "yatra"],
+  "એલટીસી": ["ltc"],
+  "બોનસ": ["bonus"],
+  "સુરક્ષા": ["security"],
+  "માહિતી": ["information"],
+  "ગોપનીય": ["confidential"],
+  "પાસવર્ડ": ["password"],
+  "બદલી": ["transfer", "badli"],
+  "તાલીમ": ["training"],
+  "કલ્યાણ": ["welfare"],
+  "યોજના": ["scheme", "yojana"],
+  "હાજરી": ["attendance", "hajri"],
+  "લાભ": ["benefit"],
+  "લાભો": ["benefits"],
+  "ભરતી": ["recruitment", "bharti"],
+  "રજિસ્ટ્રી": ["registry"],
+  "દસ્તાવેજ": ["document"],
+  "દસ્તાવેજો": ["documents"],
+  "મેડિકલ": ["medical"],
+  "માતૃત્વ": ["maternity"],
+  // Hindi (Devanagari)
+  "छुट्टी": ["leave", "chutti"],
+  "छुट्टियां": ["leave", "chutti"],
+  "रजा": ["leave", "raja"],
+  "अवकाश": ["leave", "avkash"],
+  "आवेदन": ["apply", "application"],
+  "प्रक्रिया": ["procedure", "process"],
+  "नियम": ["rule", "policy"],
+  "वेतन": ["salary", "payroll", "vetan"],
+  "पेंशन": ["pension"],
+  "यात्रा": ["travel", "yatra"],
+  "एलटीसी": ["ltc"],
+  "बोनस": ["bonus"],
+  "सुरक्षा": ["security"],
+  "जानकारी": ["information"],
+  "सूचना": ["information"],
+  "गोपनीय": ["confidential"],
+  "पासवर्ड": ["password"],
+  "तबादला": ["transfer", "tabadla"],
+  "प्रशिक्षण": ["training"],
+  "कल्याण": ["welfare"],
+  "योजना": ["scheme", "yojana"],
+  "उपस्थिति": ["attendance"],
+  "हाजिरी": ["attendance", "hajri"],
+  "लाभ": ["benefit"],
+  "दस्तावेज़": ["document"],
+  "दस्तावेज": ["document"],
+  "भर्ती": ["recruitment", "bharti"],
+  "मैटरनिटी": ["maternity"],
+  "मेडिकल": ["medical"],
+};
 
 function tokenize(q: string): string[] {
   return q
@@ -14,6 +84,20 @@ function tokenize(q: string): string[] {
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .split(/\s+/)
     .filter((t) => t.length > 1 && !STOPWORDS.has(t));
+}
+
+/**
+ * Returns the query with English topic synonyms of any Hindi/Gujarati terms
+ * appended. Retrieval, sentence ranking and conflict detection all run on the
+ * expanded form so results are identical across languages.
+ */
+export function expandQuery(q: string): string {
+  const extra: string[] = [];
+  for (const t of tokenize(q)) {
+    const syns = INDIC_SYNONYMS[t];
+    if (syns) for (const s of syns) if (!extra.includes(s)) extra.push(s);
+  }
+  return extra.length ? `${q} ${extra.join(" ")}` : q;
 }
 
 export interface Retrieved {

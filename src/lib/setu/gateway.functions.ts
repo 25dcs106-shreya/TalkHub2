@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { runGateway } from "./pipeline";
 import { canViewRiskDetails, redactResultForRole } from "./authz";
-import type { Language } from "./i18n";
+import { detectQueryLanguage, type Language } from "./i18n";
 import type { GatewayResult, Passport } from "./types";
 
 /**
@@ -23,7 +23,9 @@ export const processQuery = createServerFn({ method: "POST" })
     }) => data,
   )
   .handler(async ({ data }): Promise<GatewayResult> => {
-    const language: Language = data.language ?? "en";
+    // The answer language follows the query's script first (a Gujarati voice
+    // question gets a Gujarati answer even on an English UI), then the locale.
+    const language: Language = detectQueryLanguage(data.query) ?? data.language ?? "en";
     const result = runGateway({
       query: data.query,
       passport: data.passport,

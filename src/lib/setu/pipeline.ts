@@ -1,5 +1,5 @@
 import { POLICIES, ROLE_SCOPES } from "./data";
-import { composeAnswer, extractTimeReference, retrieve, toCitation } from "./rag";
+import { composeAnswer, expandQuery, extractTimeReference, retrieve, toCitation } from "./rag";
 import {
   absoluteRefusal,
   detectCredentials,
@@ -93,8 +93,11 @@ export function runGateway(input: PipelineInput): GatewayResult {
   });
 
   // 4. Retrieval scope / authorisation ------------------------------------
+  // Multilingual queries are expanded with English topic synonyms so Hindi
+  // and Gujarati questions retrieve the same authoritative sources.
   const historical = extractTimeReference(query);
-  const { allowed, deniedByRbac } = retrieve(sanitized, passport, historical);
+  const expanded = expandQuery(sanitized);
+  const { allowed, deniedByRbac } = retrieve(expanded, passport, historical);
   const authorised = deniedByRbac.length === 0;
 
   // 5. Risk engine ---------------------------------------------------------
@@ -198,7 +201,7 @@ export function runGateway(input: PipelineInput): GatewayResult {
       : "No authoritative source matched",
   });
 
-  const { answer, confidence } = composeAnswer(sanitized, allowed, historical);
+  const { answer, confidence } = composeAnswer(expanded, allowed, historical);
   trace.push({
     step: "AI Model Call",
     status: "pass",
@@ -217,7 +220,7 @@ export function runGateway(input: PipelineInput): GatewayResult {
 
   const primaryDoc = allowed[0]?.doc;
   const conflict =
-    primaryDoc?.conflict && /leave|casual|cl\b/i.test(sanitized) ? primaryDoc.conflict : null;
+    primaryDoc?.conflict && /leave|casual|cl\b/i.test(expanded) ? primaryDoc.conflict : null;
 
   const outcome = allowed.length ? "answered" : "no_source";
   const humanApprovalRequired =
