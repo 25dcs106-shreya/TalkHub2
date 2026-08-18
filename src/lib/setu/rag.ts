@@ -80,8 +80,11 @@ const INDIC_SYNONYMS: Record<string, string[]> = {
 
 function tokenize(q: string): string[] {
   return q
+    .normalize("NFC")
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    // Keep \p{M} — Indic vowel signs (matras) and the virama are combining
+    // marks, not letters; stripping them would destroy Hindi/Gujarati words.
+    .replace(/[^\p{L}\p{N}\p{M}\s]/gu, " ")
     .split(/\s+/)
     .filter((t) => t.length > 1 && !STOPWORDS.has(t));
 }
