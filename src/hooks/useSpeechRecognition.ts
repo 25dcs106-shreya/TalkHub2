@@ -8,15 +8,26 @@ export type SpeechErrorKind =
   | "aborted"
   | "unknown";
 
+interface SpeechRecognitionResultItem {
+  isFinal: boolean;
+  0: { transcript: string };
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultItem>;
+}
+
 interface SpeechRecognitionLike {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   start: () => void;
   stop: () => void;
   abort: () => void;
-  onresult: ((event: any) => void) | null;
-  onerror: ((event: any) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
   onstart: (() => void) | null;
 }
@@ -33,22 +44,33 @@ function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
  * Browser speech-to-text. Produces TEXT ONLY — no audio ever leaves the
  * browser through this hook, nothing is recorded or stored, and the caller
  * decides when (and whether) the transcript is submitted to the gateway.
+ *
+ * - `onInterim(text)` fires with live partial text while the user speaks.
+ * - `onFinal(text)` fires with each committed utterance chunk.
+ * - Recognition runs continuously until `stop()` so the user controls the
+ *   recording with an explicit stop action.
  */
 export function useSpeechRecognition(options: {
   lang: string;
-  onTranscript: (text: string) => void;
+  onFinal: (text: string) => void;
+  onInterim?: (text: string) => void;
   onError?: (kind: SpeechErrorKind) => void;
+  onListeningChange?: (listening: boolean) => void;
 }) {
-  const { lang, onTranscript, onError } = options;
+  const { lang, onFinal, onInterim, onError, onListeningChange } = options;
   const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState("");
   const [supported, setSupported] = useState(true);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
-  const cbRef = useRef({ onTranscript, onError });
-  cbRef.current = { onTranscript, onError };
+  const cbRef = useRef({ onFinal, onInterim, onError, onListeningChange });
+  cbRef.current = { onFinal, onInterim, onError, onListeningChange };
 
   useEffect(() => {
     setSupported(Boolean(getRecognitionCtor()));
+  }, []);
+
+  const setActive = useCallback((v: boolean) => {
+    setListening(v);
+    cbRef.current.onListeningChange?.(v);
   }, []);
 
   const stop = useCallback(() => {
@@ -57,8 +79,6 @@ export function useSpeechRecognition(options: {
     } catch {
       /* already stopped */
     }
-    setListening(false);
-    setInterim("");
   }, []);
 
   const start = useCallback(() => {
@@ -83,25 +103,29 @@ export function useSpeechRecognition(options: {
     }
     recRef.current = rec;
     rec.lang = lang;
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
+    rec.maxAlternatives = 1;
 
-    rec.onstart = () => setListening(true);
-    rec.onresult = (event: any) => {
-      let finalText = "";
-      let partial = "";
+    rec.onstart = () => setActive(true);
+    rec.onresult = (event) => {
+      let interim = "";
       for (let i = event.resultIndex ?? 0; i < event.results.length; i += 1) {
         const res = event.results[i];
+        if (!res) continue;
         const text = res[0]?.transcript ?? "";
-        if (res.isFinal) finalText += text;
-        else partial += text;
+        // Speech becomes text only. It is handed back to the input for the
+        // user to review/edit — it is never auto-submitted from here.
+        if (res.isFinal) {
+          const trimmed = text.trim();
+          if (trimmed) cbRef.current.onFinal(trimmed);
+        } else {
+          interim += text;
+        }
       }
-      setInterim(partial);
-      // Speech becomes text only. It is handed back to the input for the user
-      // to review/edit — it is never auto-submitted from here.
-      if (finalText.trim()) cbRef.current.onTranscript(finalText.trim());
+      cbRef.current.onInterim?.(interim);
     };
-    rec.onerror = (event: any) => {
+    rec.onerror = (event) => {
       const code = String(event?.error ?? "unknown");
       const kind: SpeechErrorKind =
         code === "not-allowed" || code === "service-not-allowed"
@@ -113,22 +137,22 @@ export function useSpeechRecognition(options: {
               : code === "aborted"
                 ? "aborted"
                 : "unknown";
-      setListening(false);
-      setInterim("");
+      setActive(false);
+      cbRef.current.onInterim?.("");
       if (kind !== "aborted") cbRef.current.onError?.(kind);
     };
     rec.onend = () => {
-      setListening(false);
-      setInterim("");
+      setActive(false);
+      cbRef.current.onInterim?.("");
     };
 
     try {
       rec.start();
     } catch {
-      setListening(false);
+      setActive(false);
       cbRef.current.onError?.("unknown");
     }
-  }, [lang]);
+  }, [lang, setActive]);
 
   // Language changes mid-session: restart cleanly with the new locale.
   useEffect(() => {
@@ -146,5 +170,5 @@ export function useSpeechRecognition(options: {
     [],
   );
 
-  return { listening, interim, supported, start, stop, toggle: () => (listening ? stop() : start()) };
+  return { listening, supported, start, stop, toggle: () => (listening ? stop() : start()) };
 }
