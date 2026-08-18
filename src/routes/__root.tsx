@@ -80,13 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SetuAI 2.0 — Zero-Trust AI Gateway for Government Knowledge" },
+      { title: "TalkHub — Zero-Trust AI Gateway for Government Knowledge" },
       {
         name: "description",
         content:
-          "SetuAI 2.0 is a zero-trust AI gateway that gives government employees source-backed policy answers with RBAC, PII protection and human oversight.",
+          "TalkHub is a zero-trust AI gateway that gives government employees source-backed policy answers with RBAC, PII protection and human oversight.",
       },
-      { name: "author", content: "SetuAI" },
+      { name: "author", content: "TalkHub" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

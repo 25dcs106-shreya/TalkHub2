@@ -214,7 +214,7 @@ export function canAccessDoc(doc: PolicyDoc, passport: Passport): boolean {
 /** Requests that are refused for everybody, regardless of role. */
 export function absoluteRefusal(query: string): string | null {
   if (/\b(password|credential|api key|token|private key)\b/i.test(query) && /\b(give|tell|show|share|what is|need|send|reveal)\b/i.test(query))
-    return "Access denied. Administrative or system credentials cannot be disclosed by SetuAI under any role or clearance level. If you require access, raise a request with your department's IT security desk.";
+    return "Access denied. Administrative or system credentials cannot be disclosed by TalkHub under any role or clearance level. If you require access, raise a request with your department's IT security desk.";
   if (/\b(bypass|circumvent|disable|override)\b[^.]{0,40}\b(authentication|security|access control|mfa|2fa|controls|firewall)\b/i.test(query))
     return "I cannot assist with bypassing security controls. If you are locked out or need an exception, the correct route is a documented exception request to your department's Information Security Officer.";
   if (/\b(home address|residential address|personal (phone|mobile|number)|private data)\b[^.]{0,40}\b(employee|colleague|officer|staff)\b/i.test(query) ||
