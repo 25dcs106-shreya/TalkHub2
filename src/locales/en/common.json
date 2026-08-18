@@ -159,6 +159,7 @@
   "chat.micNoSpeech": "No speech was detected. Please try again.",
   "chat.micNetwork": "Speech recognition could not reach the network. Please try again.",
   "chat.micError": "Voice input could not be completed. You can type your question instead.",
+  "chat.micUnavailable": "Voice input could not start in this browser view. Please type your question, or open the app in a full browser tab and allow microphone access.",
   "chat.micHint": "Speech is converted to text only. Review and edit it before sending.",
   "chat.tryAgain": "Try again",
   "chat.inputWarning": "Never enter passwords, OTPs or access tokens. The gateway blocks and discards them.",
