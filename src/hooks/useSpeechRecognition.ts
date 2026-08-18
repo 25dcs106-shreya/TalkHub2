@@ -6,6 +6,7 @@ export type SpeechErrorKind =
   | "no-speech"
   | "network"
   | "aborted"
+  | "unavailable"
   | "unknown";
 
 interface SpeechRecognitionResultItem {
