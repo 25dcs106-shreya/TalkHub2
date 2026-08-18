@@ -6,6 +6,7 @@ export type SpeechErrorKind =
   | "no-speech"
   | "network"
   | "aborted"
+  | "unavailable"
   | "unknown";
 
 interface SpeechRecognitionResultItem {
@@ -61,8 +62,16 @@ export function useSpeechRecognition(options: {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cbRef = useRef({ onFinal, onInterim, onError, onListeningChange });
   cbRef.current = { onFinal, onInterim, onError, onListeningChange };
+
+  const clearStartTimer = useCallback(() => {
+    if (startTimerRef.current) {
+      clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setSupported(Boolean(getRecognitionCtor()));
@@ -74,12 +83,13 @@ export function useSpeechRecognition(options: {
   }, []);
 
   const stop = useCallback(() => {
+    clearStartTimer();
     try {
       recRef.current?.stop();
     } catch {
       /* already stopped */
     }
-  }, []);
+  }, [clearStartTimer]);
 
   const start = useCallback(() => {
     const Ctor = getRecognitionCtor();
@@ -107,7 +117,12 @@ export function useSpeechRecognition(options: {
     rec.interimResults = true;
     rec.maxAlternatives = 1;
 
-    rec.onstart = () => setActive(true);
+    let started = false;
+    rec.onstart = () => {
+      started = true;
+      clearStartTimer();
+      setActive(true);
+    };
     rec.onresult = (event) => {
       let interim = "";
       for (let i = event.resultIndex ?? 0; i < event.results.length; i += 1) {
@@ -126,6 +141,7 @@ export function useSpeechRecognition(options: {
       cbRef.current.onInterim?.(interim);
     };
     rec.onerror = (event) => {
+      clearStartTimer();
       const code = String(event?.error ?? "unknown");
       const kind: SpeechErrorKind =
         code === "not-allowed" || code === "service-not-allowed"
@@ -142,6 +158,7 @@ export function useSpeechRecognition(options: {
       if (kind !== "aborted") cbRef.current.onError?.(kind);
     };
     rec.onend = () => {
+      clearStartTimer();
       setActive(false);
       cbRef.current.onInterim?.("");
     };
@@ -151,8 +168,27 @@ export function useSpeechRecognition(options: {
     } catch {
       setActive(false);
       cbRef.current.onError?.("unknown");
+      return;
     }
-  }, [lang, setActive]);
+
+    // Watchdog: some environments (headless browsers, embedded previews
+    // without microphone permission) accept start() but then fire neither
+    // onstart nor onerror — the recognition silently hangs and the mic
+    // button looks dead. If the service hasn't started within 3s, abort and
+    // surface a clear error so the user knows to type instead.
+    clearStartTimer();
+    startTimerRef.current = setTimeout(() => {
+      if (started) return;
+      try {
+        rec.abort();
+      } catch {
+        /* ignore */
+      }
+      setActive(false);
+      cbRef.current.onInterim?.("");
+      cbRef.current.onError?.("unavailable");
+    }, 3000);
+  }, [lang, setActive, clearStartTimer]);
 
   // Language changes mid-session: restart cleanly with the new locale.
   useEffect(() => {
@@ -161,13 +197,14 @@ export function useSpeechRecognition(options: {
 
   useEffect(
     () => () => {
+      clearStartTimer();
       try {
         recRef.current?.abort();
       } catch {
         /* ignore */
       }
     },
-    [],
+    [clearStartTimer],
   );
 
   return { listening, supported, start, stop, toggle: () => (listening ? stop() : start()) };

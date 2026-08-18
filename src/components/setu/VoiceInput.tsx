@@ -44,8 +44,11 @@ export function VoiceInput({
               ? tt("chat.micNoSpeech")
               : kind === "network"
                 ? tt("chat.micNetwork")
-                : tt("chat.micError");
+                : kind === "unavailable"
+                  ? tt("chat.micUnavailable")
+                  : tt("chat.micError");
       toast.error(message, {
+        ...(kind === "unavailable" ? { duration: 8000 } : {}),
         action:
           kind === "denied" || kind === "network" || kind === "no-speech"
             ? { label: tt("chat.tryAgain"), onClick: () => start() }
