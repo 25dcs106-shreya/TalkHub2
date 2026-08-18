@@ -83,12 +83,13 @@ export function useSpeechRecognition(options: {
   }, []);
 
   const stop = useCallback(() => {
+    clearStartTimer();
     try {
       recRef.current?.stop();
     } catch {
       /* already stopped */
     }
-  }, []);
+  }, [clearStartTimer]);
 
   const start = useCallback(() => {
     const Ctor = getRecognitionCtor();
