@@ -174,7 +174,7 @@ export function runGateway(input: PipelineInput): GatewayResult {
       ...base,
       outcome: "denied",
       securityStatus: "blocked",
-      answer: lang !== "en" ? s.blockedGeneric : `ACCESS DENIED. Your Security Passport (${passport.user.roleLabel}, clearance L${passport.user.clearance}) does not authorise the knowledge required to answer this question. Matching restricted material: ${titles}. If you have a legitimate official need, request human review and an authorised officer will handle it.`,
+      answer: lang !== "en" ? translate(lang, "chat.blockedGeneric") : `ACCESS DENIED. Your Security Passport (${passport.user.roleLabel}, clearance L${passport.user.clearance}) does not authorise the knowledge required to answer this question. Matching restricted material: ${titles}. If you have a legitimate official need, request human review and an authorised officer will handle it.`,
       citations: [],
       confidence: 0,
       humanApprovalRequired: true,

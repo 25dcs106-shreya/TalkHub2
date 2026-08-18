@@ -1,14 +1,17 @@
 import { cn } from "@/lib/utils";
 import type { RiskLevel } from "@/lib/setu/types";
+import { RISK_KEYS } from "@/lib/setu/i18n";
+import { useSetu } from "@/lib/setu/store";
 import { ShieldCheck, ShieldAlert, ShieldX, TriangleAlert } from "lucide-react";
 
-const RISK_STYLE: Record<RiskLevel, { cls: string; label: string }> = {
-  LOW: { cls: "bg-safe-soft text-safe border-safe/30", label: "LOW" },
-  MEDIUM: { cls: "bg-warn-soft text-warn-foreground border-warn/40", label: "MEDIUM" },
-  HIGH: { cls: "bg-high-soft text-high border-high/40", label: "HIGH" },
-  CRITICAL: { cls: "bg-critical-soft text-critical border-critical/40", label: "CRITICAL" },
+const RISK_STYLE: Record<RiskLevel, string> = {
+  LOW: "bg-safe-soft text-safe border-safe/30",
+  MEDIUM: "bg-warn-soft text-warn-foreground border-warn/40",
+  HIGH: "bg-high-soft text-high border-high/40",
+  CRITICAL: "bg-critical-soft text-critical border-critical/40",
 };
 
+/** Internal risk badge — only ever rendered for authorised security roles. */
 export function RiskBadge({
   level,
   score,
@@ -18,20 +21,20 @@ export function RiskBadge({
   score?: number;
   className?: string;
 }) {
-  const s = RISK_STYLE[level];
+  const { t } = useSetu();
   const Icon =
     level === "LOW" ? ShieldCheck : level === "MEDIUM" ? ShieldAlert : level === "HIGH" ? TriangleAlert : ShieldX;
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide",
-        s.cls,
+        RISK_STYLE[level],
         className,
       )}
     >
       <Icon className="size-3.5" aria-hidden />
       <span>
-        RISK {s.label}
+        {t("common.risk")} {t(RISK_KEYS[level] ?? "risk.low")}
         {typeof score === "number" ? ` · ${score}/100` : ""}
       </span>
     </span>
@@ -39,11 +42,12 @@ export function RiskBadge({
 }
 
 export function ConfidenceBadge({ value }: { value: number }) {
+  const { t } = useSetu();
   const tone =
     value >= 85 ? "bg-safe-soft text-safe border-safe/30" : value >= 70 ? "bg-warn-soft text-warn-foreground border-warn/40" : "bg-high-soft text-high border-high/40";
   return (
     <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold", tone)}>
-      Confidence {value}%
+      {t("chat.confidence", { n: value })}
     </span>
   );
 }

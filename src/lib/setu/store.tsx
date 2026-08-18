@@ -9,6 +9,14 @@ import {
 } from "react";
 import { buildPassport } from "./pipeline";
 import { DEMO_USERS, SEED_EVENTS, SEED_TICKETS, findUser } from "./data";
+import {
+  localeTag,
+  speechLocale,
+  translate,
+  type Language,
+  type StringKey,
+  type TranslateVars,
+} from "./i18n";
 import type {
   ChatMessage,
   DemoUser,
@@ -19,7 +27,7 @@ import type {
   SecurityEvent,
 } from "./types";
 
-export type Language = "en" | "hi" | "gu";
+export type { Language };
 
 interface SetuState {
   user: DemoUser | null;
@@ -33,7 +41,7 @@ interface SetuState {
   notifications: { id: string; text: string; at: string; read: boolean }[];
 }
 
-const STORAGE_KEY = "setuai.state.v1";
+const STORAGE_KEY = "talkhub.state.v1";
 
 const initialState: SetuState = {
   user: null,
@@ -60,9 +68,19 @@ const initialState: SetuState = {
   ],
 };
 
+export interface LoginResult {
+  ok: boolean;
+  errorKey?: StringKey;
+  errorDept?: string;
+}
+
 interface SetuContextValue extends SetuState {
   hydrated: boolean;
-  login: (identifier: string, password: string, department: string) => { ok: boolean; error?: string };
+  /** Translate a UI key into the currently selected language. */
+  t: (key: StringKey, vars?: TranslateVars) => string;
+  /** BCP-47 tag for the selected language (date/number formatting). */
+  locale: string;
+  login: (identifier: string, password: string, department: string) => LoginResult;
   loginAs: (username: string) => void;
   logout: () => void;
   setLanguage: (l: Language) => void;
@@ -88,7 +106,9 @@ export function SetuProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      // Migrate from the previous storage key so the language/session survives.
+      const raw =
+        localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("setuai.state.v1");
       if (raw) {
         const parsed = JSON.parse(raw) as SetuState;
         setState({ ...initialState, ...parsed });
@@ -108,6 +128,11 @@ export function SetuProvider({ children }: { children: ReactNode }) {
     }
   }, [state, hydrated]);
 
+  // Keep <html lang> and the document language in sync with the selection.
+  useEffect(() => {
+    document.documentElement.lang = speechLocale(state.language);
+  }, [state.language]);
+
   const logEvent = useCallback((e: Omit<SecurityEvent, "id" | "timestamp">) => {
     setState((s) => ({
       ...s,
@@ -123,12 +148,12 @@ export function SetuProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SetuContextValue>(() => {
-    const login = (identifier: string, password: string, department: string) => {
+    const login = (identifier: string, password: string, department: string): LoginResult => {
       const user = findUser(identifier);
-      if (!user) return { ok: false, error: "Unknown Employee ID or demo account." };
-      if (user.password !== password) return { ok: false, error: "Incorrect password for the demo account." };
+      if (!user) return { ok: false, errorKey: "login.errorUnknown" };
+      if (user.password !== password) return { ok: false, errorKey: "login.errorPassword" };
       if (department && department !== user.department)
-        return { ok: false, error: `This account belongs to the ${user.department} department.` };
+        return { ok: false, errorKey: "login.errorDepartment", errorDept: user.department };
       setState((s) => ({
         ...s,
         user,
@@ -142,6 +167,8 @@ export function SetuProvider({ children }: { children: ReactNode }) {
     return {
       ...state,
       hydrated,
+      t: (key, vars) => translate(state.language, key, vars),
+      locale: localeTag(state.language),
       login,
       loginAs: (username: string) => {
         const user = DEMO_USERS.find((u) => u.username === username);
