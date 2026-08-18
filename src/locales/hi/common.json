@@ -75,6 +75,9 @@
   "common.risk": "जोखिम",
   "common.device": "डिवाइस",
   "common.level": "स्तर {n}",
+  "common.circular": "परिपत्र",
+  "common.effective": "प्रभावी",
+  "common.lastUpdated": "अंतिम अद्यतन",
 
   "login.title": "कर्मचारी साइन-इन",
   "login.subtitle": "जो कुछ भी आपको जानने के लिए अधिकृत है, सुरक्षित रूप से पूछें।",

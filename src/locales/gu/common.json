@@ -75,6 +75,9 @@
   "common.risk": "જોખમ",
   "common.device": "ડિવાઇસ",
   "common.level": "સ્તર {n}",
+  "common.circular": "પરિપત્ર",
+  "common.effective": "અમલી",
+  "common.lastUpdated": "છેલ્લો સુધારો",
 
   "login.title": "કર્મચારી સાઇન-ઇન",
   "login.subtitle": "તમને જાણવા માટે અધિકૃત છે તે સુરક્ષિત રીતે પૂછો.",
