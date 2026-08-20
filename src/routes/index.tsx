@@ -26,13 +26,13 @@ import { Card, CardContent } from "@/components/ui/card";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sign in — TalkHub Zero-Trust AI Gateway" },
+      { title: "Sign in | TalkHub" },
       {
         name: "description",
         content:
           "Secure demo sign-in for TalkHub, the zero-trust AI gateway that protects government knowledge with RBAC, PII scanning and human oversight.",
       },
-      { property: "og:title", content: "Sign in — TalkHub Zero-Trust AI Gateway" },
+      { property: "og:title", content: "Sign in | TalkHub" },
       {
         property: "og:description",
         content:
